@@ -1,0 +1,92 @@
+import { NextResponse } from "next/server";
+import connectDB from "../../../../lib/db";
+import { withAuth, AuthenticatedRequest } from "../../../../lib/middleware";
+import { aiRateLimiter } from "../../../../lib/rateLimiter";
+import { generateFlashcardsFromImage, generateQuizFromImage } from "../../../../services/ai.service";
+import Flashcard from "../../../../models/Flashcard";
+import Quiz from "../../../../models/Quiz";
+import Topic from "../../../../models/Topic";
+
+export const maxDuration = 60; // Allows longer timeout if supported by vercel/deployment
+
+async function generateFromImageRoute(req: AuthenticatedRequest) {
+  try {
+    await connectDB();
+    const userId = req.user.id;
+
+    // Check rate limit
+    const rateLimitResponse = aiRateLimiter(req, userId);
+    if (rateLimitResponse) return rateLimitResponse;
+
+    const formData = await req.formData();
+    const file = formData.get("file") as File | null;
+    const type = formData.get("type") as string | null; // "flashcard" or "quiz"
+    const topicId = formData.get("topicId") as string | null;
+
+    if (!file || !type || !topicId) {
+      return NextResponse.json(
+        { success: false, error: { message: "File, type, and topicId are required", code: "VALIDATION_ERROR" } },
+        { status: 400 }
+      );
+    }
+
+    const topic = await Topic.findOne({ _id: topicId, userId });
+    if (!topic) {
+      return NextResponse.json(
+        { success: false, error: { message: "Topic not found", code: "NOT_FOUND" } },
+        { status: 404 }
+      );
+    }
+
+    const allowedMimeTypes = ["image/jpeg", "image/png", "image/webp", "image/jpg"];
+    if (!allowedMimeTypes.includes(file.type)) {
+      return NextResponse.json(
+        { success: false, error: { message: "Invalid image type. Only JPG, PNG, WEBP allowed.", code: "VALIDATION_ERROR" } },
+        { status: 400 }
+      );
+    }
+
+    const arrayBuffer = await file.arrayBuffer();
+    const uint8Array = new Uint8Array(arrayBuffer);
+
+    let generatedData: any = null;
+
+    if (type === "flashcard") {
+      const generatedFlashcards = await generateFlashcardsFromImage(uint8Array, file.type);
+      
+      const savedCards = await Flashcard.insertMany(
+        generatedFlashcards.map((card: any) => ({
+          topicId: topic._id,
+          userId,
+          question: card.question,
+          answer: card.answer,
+        }))
+      );
+      generatedData = savedCards;
+    } else if (type === "quiz") {
+      const generatedQuestions = await generateQuizFromImage(uint8Array, file.type);
+      
+      const savedQuiz = await Quiz.create({
+        topicId: topic._id,
+        userId,
+        questions: generatedQuestions,
+      });
+      generatedData = [savedQuiz]; // Match the array expectation for quizzes
+    } else {
+      return NextResponse.json(
+        { success: false, error: { message: "Invalid type. Must be 'flashcard' or 'quiz'.", code: "VALIDATION_ERROR" } },
+        { status: 400 }
+      );
+    }
+
+    return NextResponse.json({ success: true, data: generatedData }, { status: 201 });
+  } catch (error: any) {
+    console.error("Generate From Image Error:", error);
+    return NextResponse.json(
+      { success: false, error: { message: error.message || "Internal Server Error", code: "INTERNAL_ERROR" } },
+      { status: 500 }
+    );
+  }
+}
+
+export const POST = withAuth(generateFromImageRoute);
