@@ -15,7 +15,7 @@ export function useAuth() {
     try {
       const data = await loginUser(credentials);
       if (data.success !== false) {
-        setTokenAndUser(data.token, data.data || data);
+        setTokenAndUser(data.token, data.user || data.data || data);
         router.push("/dashboard");
       }
     } catch (err: any) {
