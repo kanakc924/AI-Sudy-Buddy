@@ -48,8 +48,7 @@ export default function TopicDetailPage() {
   const [extractedText, setExtractedText] = useState('')
 
   useEffect(() => {
-    // Fetch topic via specific API route (assuming standard GET /api/topics/[id] exists)
-    // Or fallback to standard authenticated fetch
+    // Fetch topic
     const fetchData = async () => {
       try {
         const token = localStorage.getItem('study_buddy_token')
@@ -108,10 +107,9 @@ export default function TopicDetailPage() {
     
     setActiveGen(type)
     try {
-      let res;
-      if (type === 'flashcards') res = await generateFlashcards(topicId, replace)
-      if (type === 'quiz') res = await generateQuiz(topicId, replace)
-      if (type === 'summary') res = await generateSummary(topicId)
+      if (type === 'flashcards') await generateFlashcards(topicId, replace)
+      if (type === 'quiz') await generateQuiz(topicId, replace)
+      if (type === 'summary') await generateSummary(topicId)
       
       toast.success(`${type.charAt(0).toUpperCase() + type.slice(1)} generated!`, { icon: '✅' })
       router.push(`/topics/${topicId}/${type === 'summary' ? 'summary' : type === 'flashcards' ? 'flashcards' : 'quiz'}`)
@@ -171,7 +169,6 @@ export default function TopicDetailPage() {
     }
   }
 
-  // Flashcard Handlers
   const handleSaveFlashcard = async (data: { question: string; answer: string }) => {
     if (!selectedFlashcard) return
     try {
@@ -194,7 +191,6 @@ export default function TopicDetailPage() {
     }
   }
 
-  // Quiz Handlers
   const handleSaveQuizQuestion = async (data: { question: string; options: string[]; correctAnswer: string }) => {
     if (!quizId || !selectedQuestion) return
     try {
@@ -297,13 +293,13 @@ export default function TopicDetailPage() {
         </TabsContent>
 
         <TabsContent value="generate" className="outline-none">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
             {[
               { id: 'flashcards', title: 'Flashcards', icon: Sparkles, color: 'text-primary', bg: 'bg-primary/10', border: 'border-primary/20', desc: 'Create study set for spaced repetition' },
               { id: 'quiz', title: 'Quiz', icon: Brain, color: 'text-blue-500', bg: 'bg-blue-500/10', border: 'border-blue-500/20', desc: 'Test your understanding with questions' },
               { id: 'summary', title: 'Summary', icon: FileText, color: 'text-[#4CAF50]', bg: 'bg-[#4CAF50]/10', border: 'border-[#4CAF50]/20', desc: 'Get a clean markdown summary' }
             ].map(card => (
-              <div key={card.id} className={`glass-card rounded-xl p-6 flex flex-col gap-4 transition-all duration-300 ${rateLimited ? 'border-amber-500/50 shadow-[0_0_15px_rgba(245,158,11,0.1)]' : 'border-border hover:-translate-y-1 hover:shadow-lg'}`}>
+              <div key={card.id} className={`glass-card rounded-xl p-6 flex flex-col gap-4 border-border transition-all duration-300 hover:-translate-y-1 hover:shadow-lg ${rateLimited ? 'border-amber-500/50 shadow-[0_0_15px_rgba(245,158,11,0.1)]' : ''}`}>
                 <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${card.bg} ${card.border} border`}>
                   <card.icon className={`w-6 h-6 ${card.color}`} />
                 </div>
