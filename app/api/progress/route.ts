@@ -1,16 +1,18 @@
 import { NextResponse } from "next/server";
-import connectDB from "../../../lib/db";
-import Subject from "../../../models/Subject";
-import Session from "../../../models/Session";
-import { withAuth, AuthenticatedRequest } from "../../../lib/middleware";
+import connectDB from "@/lib/db";
+import Subject from "@/models/Subject";
+import Topic from "@/models/Topic";
+import Session from "@/models/Session";
+import User from "@/models/User";
+import { withAuth, AuthenticatedRequest } from "@/lib/middleware";
 
 function getRelativeTime(date: Date) {
   const rtf = new Intl.RelativeTimeFormat('en', { numeric: 'auto' });
-  const daysDifference = Math.round((date.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
+  const daysDifference = Math.round((date.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
   if (daysDifference === 0) {
-    const hoursDifference = Math.round((date.getTime() - new Date().getTime()) / (1000 * 60 * 60));
+    const hoursDifference = Math.round((date.getTime() - Date.now()) / (1000 * 60 * 60));
     if (hoursDifference === 0) {
-      const minutesDifference = Math.round((date.getTime() - new Date().getTime()) / (1000 * 60));
+      const minutesDifference = Math.round((date.getTime() - Date.now()) / (1000 * 60));
       return rtf.format(minutesDifference, 'minute');
     }
     return rtf.format(hoursDifference, 'hour');
@@ -37,7 +39,7 @@ async function getProgressStats(req: AuthenticatedRequest) {
       averageQuizScore = Math.round(totalScore / quizSessions.length);
     }
 
-    // Heatmap / Activity Data (last 12 weeks basic approximation)
+    // Process stats for heatmap and streak
     const sessions = await Session.find({ userId }).sort({ completedAt: 1 }).select("completedAt score type");
     const activityMap: Record<string, number> = {};
     let currentStreak = 0;
@@ -46,7 +48,10 @@ async function getProgressStats(req: AuthenticatedRequest) {
     if (sessions.length > 0) {
       // Create a map of date strings (YYYY-MM-DD) -> counts
       sessions.forEach(session => {
-        const dateStr = session.completedAt.toISOString().split("T")[0];
+        if (!session.completedAt) return;
+        const d = new Date(session.completedAt);
+        if (isNaN(d.getTime())) return;
+        const dateStr = d.toISOString().split("T")[0];
         if (!activityMap[dateStr]) activityMap[dateStr] = 0;
         activityMap[dateStr]++;
       });
@@ -113,19 +118,23 @@ async function getProgressStats(req: AuthenticatedRequest) {
       .limit(5)
       .populate({ 
         path: 'topicId', 
+        model: Topic,
         select: 'title subjectId',
-        populate: { path: 'subjectId', select: 'title' }
+        populate: { path: 'subjectId', model: Subject, select: 'title' }
       })
       .lean();
 
-    const recentSessions = last5Sessions.map((s: any) => ({
-      _id: s._id.toString(),
-      type: s.type,
-      topic: s.topicId?.title || 'Unknown Topic',
-      subject: s.topicId?.subjectId?.title || 'Unknown Subject',
-      score: s.score,
-      timeAgo: getRelativeTime(new Date(s.completedAt))
-    }));
+    const recentSessions = last5Sessions.map((s: any) => {
+      const compDate = s.completedAt ? new Date(s.completedAt) : new Date();
+      return {
+        _id: s._id.toString(),
+        type: s.type,
+        topic: s.topicId?.title || 'Unknown Topic',
+        subject: s.topicId?.subjectId?.title || 'Unknown Subject',
+        score: s.score,
+        timeAgo: isNaN(compDate.getTime()) ? 'Recently' : getRelativeTime(compDate)
+      };
+    });
 
     // 3. Weak Topics (Topics with avg score < 70)
     // We'll calculate it from the last 50 sessions
@@ -134,8 +143,9 @@ async function getProgressStats(req: AuthenticatedRequest) {
       .limit(50)
       .populate({ 
         path: 'topicId', 
+        model: Topic,
         select: 'title subjectId',
-        populate: { path: 'subjectId', select: 'title' }
+        populate: { path: 'subjectId', model: Subject, select: 'title' }
       })
       .lean();
 
@@ -158,7 +168,7 @@ async function getProgressStats(req: AuthenticatedRequest) {
     const weakTopics = Object.keys(topicScores)
       .map(tId => ({
         _id: tId,
-        name: topicScores[tId].title,
+        title: topicScores[tId].title,
         subject: topicScores[tId].subject,
         score: Math.round(topicScores[tId].total / topicScores[tId].count)
       }))
@@ -180,9 +190,9 @@ async function getProgressStats(req: AuthenticatedRequest) {
       },
     });
   } catch (error: any) {
-    console.error("Get Progress Stats Error:", error);
+    console.error("Progress API Error:", error);
     return NextResponse.json(
-      { success: false, error: { message: "Internal Server Error", code: "INTERNAL_ERROR" } },
+      { success: false, error: { message: error.message || "Internal Server Error", code: "INTERNAL_ERROR" } },
       { status: 500 }
     );
   }
