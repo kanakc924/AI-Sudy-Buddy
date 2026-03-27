@@ -25,7 +25,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
       </head>
-      <body className={`${dmSans.variable} ${playfair.variable} ${geistMono.variable} font-sans antialiased`}>
+      <body className={`${dmSans.variable} ${playfair.variable} ${geistMono.variable} font-sans antialiased`} suppressHydrationWarning>
         <ThemeProvider
           attribute="class"
           defaultTheme="dark"
