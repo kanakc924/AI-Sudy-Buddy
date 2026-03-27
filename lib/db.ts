@@ -1,4 +1,9 @@
 import mongoose from "mongoose";
+// Pre-register models to avoid "Schema hasn't been registered" errors during population
+import "@/models/User";
+import "@/models/Subject";
+import "@/models/Topic";
+import "@/models/Session";
 
 const MONGODB_URI = process.env.MONGODB_URI;
 
