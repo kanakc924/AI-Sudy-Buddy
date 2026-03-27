@@ -6,8 +6,6 @@ import { usePathname, useRouter } from 'next/navigation'
 import { Brain, LayoutDashboard, Settings, Plus, Flame, LogOut, ArrowRight, BookOpen } from 'lucide-react'
 import { getSubjects, getProgress } from '@/services/api'
 import { useAuth } from '@/hooks/useAuth'
-import { Progress } from '@/components/ui/progress'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { cn } from '@/lib/utils'
 
 
@@ -19,7 +17,7 @@ const SUBJECT_COLORS = [
 export function AppSidebar() {
   const pathname = usePathname()
   const router = useRouter()
-  const { user, logout } = useAuth()
+  const { logout } = useAuth()
   const [subjects, setSubjects] = useState<any[]>([])
   const [streak, setStreak] = useState(0)
 
@@ -118,18 +116,13 @@ export function AppSidebar() {
           </div>
         </div>
 
-        <div className="flex items-center justify-between pt-2">
-          <div className="flex items-center gap-3 overflow-hidden">
-            <Avatar className="h-9 w-9 border border-primary/20">
-              <AvatarFallback className="bg-primary/10 text-primary uppercase">{user?.name?.charAt(0) || 'U'}</AvatarFallback>
-            </Avatar>
-            <div className="flex flex-col truncate">
-              <span className="text-sm font-medium text-foreground truncate">{user?.name || 'Loading...'}</span>
-              <span className="text-xs text-muted-foreground truncate">{user?.email || ''}</span>
-            </div>
-          </div>
-          <button onClick={handleLogout} className="p-2 text-muted-foreground hover:text-destructive transition-colors shrink-0">
-            <LogOut className="w-4 h-4" />
+        <div className="pt-2">
+          <button 
+            onClick={handleLogout} 
+            className="flex items-center justify-between px-3 py-2 w-full rounded-lg text-sm font-medium text-muted-foreground hover:text-white transition-colors group"
+          >
+            <span className="transition-colors">Logout</span>
+            <ArrowRight className="w-4 h-4 transition-colors group-hover:text-white" />
           </button>
         </div>
       </div>
