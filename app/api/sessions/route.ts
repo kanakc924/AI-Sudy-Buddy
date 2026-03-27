@@ -43,9 +43,13 @@ async function getSessions(req: AuthenticatedRequest) {
 
     // Optional query parameters like limit or topicId
     const { searchParams } = new URL(req.url);
-    const limit = parseInt(searchParams.get("limit") || "10", 10);
+    const limit = parseInt(searchParams.get("limit") || "100", 10);
+    const topicId = searchParams.get("topicId");
 
-    const sessions = await Session.find({ userId })
+    const query: any = { userId };
+    if (topicId) query.topicId = topicId;
+
+    const sessions = await Session.find(query)
       .sort({ completedAt: -1 })
       .limit(limit)
       .populate("topicId", "title");
