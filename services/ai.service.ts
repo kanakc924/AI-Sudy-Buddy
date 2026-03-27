@@ -9,7 +9,7 @@ const openrouter = createOpenRouter({
 });
 
 const PRIMARY_MODEL = process.env.OPENROUTER_PRIMARY_MODEL || "google/gemma-3-27b-it:free";
-const FALLBACK_MODEL = process.env.OPENROUTER_FALLBACK_MODEL || "openrouter/free"; // alternative "mistralai/mistral-small-3.1-24b-instruct:free"
+const FALLBACK_MODEL = process.env.OPENROUTER_FALLBACK_MODEL || "openrouter/free";
 
 function getModel(useFallback = false) {
   const modelId = useFallback ? FALLBACK_MODEL : PRIMARY_MODEL;
@@ -62,7 +62,7 @@ ${notes}`,
 }
 
 export async function generateFlashcards(notes: string, count = 10): Promise<FlashcardOutput["flashcards"]> {
-  console.log(`Generating ${count} flashcards for notes length: ${notes.length}`);
+  console.log(`Generating ${count} flashcards`);
   const prompt = `You are an expert tutor. Generate exactly ${count} flashcards 
 from these study notes. Each flashcard should test one specific concept.
 
