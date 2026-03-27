@@ -136,6 +136,7 @@ async function getProgressStats(req: AuthenticatedRequest) {
       };
     });
 
+
     // 3. Weak Topics (Topics with avg score < 70)
     // We'll calculate it from the last 50 sessions
     const recentSessionsForWeakItems = await Session.find({ userId })
@@ -176,15 +177,56 @@ async function getProgressStats(req: AuthenticatedRequest) {
       .sort((a, b) => a.score - b.score)
       .slice(0, 3); // top 3 weakest
 
+    // 4. Subject Mastery (Average score per subject)
+    const subjects = await Subject.find({ userId }).select("title");
+    const subjectMasteryMap: Record<string, { total: number; count: number }> = {};
+    
+    // Initialize map for all subjects
+    subjects.forEach(s => {
+      subjectMasteryMap[s.title] = { total: 0, count: 0 };
+    });
+
+    recentSessionsForWeakItems.forEach((s: any) => {
+      if (!s.topicId?.subjectId?.title) return;
+      const sTitle = s.topicId.subjectId.title;
+      if (subjectMasteryMap[sTitle]) {
+        subjectMasteryMap[sTitle].total += s.score;
+        subjectMasteryMap[sTitle].count += 1;
+      }
+    });
+
+    const subjectMastery = Object.keys(subjectMasteryMap).map(title => ({
+      subject: title,
+      score: subjectMasteryMap[title].count > 0 
+        ? Math.round(subjectMasteryMap[title].total / subjectMasteryMap[title].count) 
+        : 0
+    }));
+
+    // 5. Topic Progress (Completed vs Total)
+    const totalTopics = await Topic.countDocuments({ userId });
+    const completedTopicsCount = Object.keys(topicScores).filter(tId => topicScores[tId].count > 0).length;
+
+    // 6. Today's Session Count
+    const todayStr = new Date().toISOString().split("T")[0];
+    const todaySessionCount = activityMap[todayStr] || 0;
+
     return NextResponse.json({
       success: true,
       data: {
         totalSubjects,
+        totalTopics,
         totalSessions,
         averageQuizScore,
         currentStreak,
+        todaySessionCount,
+        topicProgress: {
+          total: totalTopics,
+          completed: completedTopicsCount,
+          percentage: totalTopics > 0 ? Math.round((completedTopicsCount / totalTopics) * 100) : 0
+        },
+        subjectMastery,
         activityHeatmap: activityMap,
-        scoreTrend: scoreTrend.length > 0 ? scoreTrend : undefined, // let frontend default if empty
+        scoreTrend: scoreTrend.length > 0 ? scoreTrend : undefined,
         recentSessions: recentSessions.length > 0 ? recentSessions : undefined,
         weakTopics: weakTopics.length > 0 ? weakTopics : undefined,
       },
