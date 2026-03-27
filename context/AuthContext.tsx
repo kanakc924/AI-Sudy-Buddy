@@ -42,7 +42,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const checkAuthWithToken = async (t: string) => {
     try {
       const res = await getMe()
-      setUser(res.data || res)
+      setUser(res.user || res.data || res)
     } catch {
       localStorage.removeItem('study_buddy_token')
       setToken(null)
