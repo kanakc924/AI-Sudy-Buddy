@@ -5,7 +5,8 @@ import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Brain, FileText, Sparkles, ChevronRight, Loader2, AlertTriangle, Play, Save } from 'lucide-react'
+import { useAuth } from '@/context/AuthContext'
+import { Brain, FileText, Sparkles, ChevronLeft, Bell, Loader2, AlertTriangle, Play, Save, BarChart3, Image as ImageIcon, MessageSquare, Plus, Trash2, Target } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { toast } from 'sonner'
 import { updateNotes, generateFlashcards, generateQuiz, generateSummary, generateFromImage, getFlashcards, getQuizzes, updateFlashcard, deleteFlashcard, updateQuiz, deleteQuiz } from '@/services/api'
@@ -16,9 +17,15 @@ import { FlashcardPreview } from '@/components/topics/FlashcardPreview'
 import { QuizPreview } from '@/components/topics/QuizPreview'
 import { FlashcardModal } from '@/components/topics/FlashcardModal'
 import { QuizQuestionModal } from '@/components/topics/QuizQuestionModal'
+import { ActivityHeatmap } from '@/components/topics/ActivityHeatmap'
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
+import { Progress } from '@/components/ui/progress'
+import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Cell, Tooltip as RechartsTooltip } from 'recharts'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { Flashcard, QuizQuestion } from '@/types'
 
 export default function TopicDetailPage() {
+  const { user } = useAuth()
   const router = useRouter()
   const params = useParams()
   const topicId = params.id as string
@@ -37,6 +44,8 @@ export default function TopicDetailPage() {
   const [flashcards, setFlashcards] = useState<Flashcard[]>([])
   const [quizzes, setQuizzes] = useState<QuizQuestion[]>([])
   const [quizId, setQuizId] = useState<string | null>(null)
+  const [sessions, setSessions] = useState<any[]>([])
+  const [isLoadingSessions, setIsLoadingSessions] = useState(true)
   
   // Edit state
   const [selectedFlashcard, setSelectedFlashcard] = useState<Flashcard | null>(null)
@@ -73,8 +82,19 @@ export default function TopicDetailPage() {
           setQuizId(latestQuiz._id)
           setQuizzes(latestQuiz.questions || [])
         }
+
+        // Fetch Sessions
+        const sRes = await fetch(`/api/sessions?topicId=${topicId}`, {
+          headers: token ? { Authorization: `Bearer ${token}` } : {}
+        })
+        if (sRes.ok) {
+          const sJson = await sRes.json()
+          setSessions(sJson.data || [])
+        }
       } catch (err) {
         toast.error('Failed to load topic details')
+      } finally {
+        setIsLoadingSessions(false)
       }
     }
     fetchData()
@@ -96,7 +116,7 @@ export default function TopicDetailPage() {
         toast.error('Failed to save notes')
         setSaveStatus('idle')
       }
-    }, 700)
+    }, 2000)
   }
 
   const handleGenerate = async (type: 'flashcards' | 'quiz' | 'summary', replace: boolean = false) => {
@@ -215,21 +235,71 @@ export default function TopicDetailPage() {
     }
   }
 
+  // Logic for Study Activity & History
+  const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+  
+  // Get sessions from current week
+  const getWeeklySessions = () => {
+    const now = new Date();
+    const startOfWeek = new Date(now.setDate(now.getDate() - now.getDay() + (now.getDay() === 0 ? -6 : 1)));
+    startOfWeek.setHours(0, 0, 0, 0);
+    return sessions.filter(s => new Date(s.completedAt) >= startOfWeek);
+  }
+
+  const weeklySessions = getWeeklySessions();
+  const weeklyProgress = Math.min(Math.round((weeklySessions.length / 7) * 100), 100);
+
+  // Group sessions by day for the bar chart
+  const studyTimeData = days.map(day => {
+    const count = sessions.filter(s => {
+      const d = new Date(s.completedAt);
+      const dayName = d.toLocaleDateString('en-US', { weekday: 'short' });
+      return dayName === day;
+    }).length;
+    
+    // Average score for that day
+    const daySessions = sessions.filter(s => {
+      const d = new Date(s.completedAt);
+      const dayName = d.toLocaleDateString('en-US', { weekday: 'short' });
+      return dayName === day;
+    });
+    const avgScore = daySessions.length > 0 
+      ? Math.round(daySessions.reduce((acc, s) => acc + s.score, 0) / daySessions.length)
+      : 0;
+
+    return { day, count, score: avgScore };
+  });
+
+
   return (
-    <div className="p-4 md:p-8 max-w-7xl mx-auto min-h-[calc(100vh-80px)]">
-      <div className="flex flex-col gap-6 mb-8">
-        <nav className="flex items-center space-x-1 text-sm text-muted-foreground w-full overflow-hidden whitespace-nowrap">
-          <Link href="/subjects" className="hover:text-foreground transition-colors">Subjects</Link>
-          <ChevronRight className="w-4 h-4 shrink-0" />
-          <span className="truncate max-w-[100px] sm:max-w-[200px]">{topic?.subjectId?.title || 'Subject'}</span>
-          <ChevronRight className="w-4 h-4 shrink-0" />
-          <span className="text-foreground font-medium truncate flex-1">{topic?.title || 'Loading...'}</span>
-        </nav>
-        
-        <h1 className="font-serif text-3xl md:text-4xl text-foreground truncate">{topic?.title || 'Loading...'}</h1>
+    <div className="p-4 md:p-8 max-w-7xl mx-auto min-h-screen space-y-8 animate-in fade-in duration-500">
+      {/* Header */}
+      <div className="flex items-center justify-between border-b border-border/50 pb-6">
+        <div className="flex items-center gap-4">
+          <Button variant="outline" size="icon" onClick={() => router.back()} className="rounded-xl border-border bg-card">
+            <ChevronLeft className="w-5 h-5" />
+          </Button>
+          <div>
+            <h1 className="font-serif text-2xl font-bold tracking-tight">
+              Subject: <span className="text-primary italic">{topic?.subjectId?.title || 'JavaScript Fundamentals'}</span>
+            </h1>
+            <p className="text-sm text-muted-foreground font-medium uppercase tracking-widest mt-1">Topic: {topic?.title || 'Loading...'}</p>
+          </div>
+        </div>
+        <Button variant="outline" size="icon" className="rounded-xl border-border bg-card relative">
+          <Bell className="w-5 h-5" />
+          <span className="absolute top-2.5 right-2.5 w-2 h-2 bg-primary rounded-full" />
+        </Button>
       </div>
 
-      <Tabs defaultValue="notes" className="w-full">
+      <div className="grid lg:grid-cols-2 gap-8">
+        <div className="space-y-8">
+          {/* AI Generation Hub Area handled in tabs below */}
+        </div>
+      </div>
+
+      <div className="pt-8 space-y-8">
+        <Tabs defaultValue="notes" className="w-full">
         <TabsList className="grid w-full grid-cols-3 h-14 bg-card rounded-xl border border-border/50 p-1 mb-6 shadow-sm">
           <TabsTrigger value="notes" className="rounded-lg data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-sm font-medium">Notes</TabsTrigger>
           <TabsTrigger value="upload" className="rounded-lg data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-sm font-medium">Upload</TabsTrigger>
@@ -385,6 +455,64 @@ export default function TopicDetailPage() {
         </TabsContent>
       </Tabs>
 
+      </div>
+
+      {/* AI Generation Hub Section */}
+      <Card className="border-border bg-linear-to-br from-[#8F8DF2]/5 to-transparent rounded-3xl shadow-sm my-8">
+        <CardContent className="p-8 space-y-6 text-center md:text-left">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+            <div className="space-y-2">
+              <h3 className="font-serif text-2xl font-bold">AI Generation Hub</h3>
+              <p className="text-sm text-muted-foreground max-w-sm">
+                Enhance your study material instantly with our advanced AI tools.
+              </p>
+            </div>
+            <div className="flex flex-col items-center md:items-end gap-1">
+              <span className="text-xl font-bold">15 / 20</span>
+              <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">Daily Requests</span>
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-4">
+            <Button 
+              onClick={() => handleGenerate('flashcards')}
+              disabled={activeGen !== null}
+              className="h-auto py-6 flex-col gap-3 rounded-2xl border-border bg-card hover:bg-muted text-foreground font-bold"
+            >
+              <div className="p-3 bg-primary/10 rounded-xl">
+                <Sparkles className="w-6 h-6 text-primary" />
+              </div>
+              <span className="text-xs">Create <br /> Flashcards</span>
+            </Button>
+            
+            <Button 
+              onClick={() => handleGenerate('summary')}
+              disabled={activeGen !== null}
+              className="h-auto py-6 flex-col gap-3 rounded-2xl border-border bg-card hover:bg-muted text-foreground font-bold"
+            >
+              <div className="p-3 bg-mint/10 rounded-xl">
+                <FileText className="w-6 h-6 text-mint" />
+              </div>
+              <span className="text-xs">Generate <br /> Summary</span>
+            </Button>
+
+            <Button 
+              onClick={() => document.getElementById('hub-image-input-bottom')?.click()}
+              disabled={activeGen !== null}
+              className="h-auto py-6 flex-col gap-3 rounded-2xl border-border bg-card hover:bg-muted text-foreground font-bold"
+            >
+              <div className="p-3 bg-blue/10 rounded-xl">
+                <ImageIcon className="w-6 h-6 text-blue" />
+              </div>
+              <span className="text-xs">Extract <br /> from Image</span>
+            </Button>
+            <input id="hub-image-input-bottom" type="file" accept="image/*" className="hidden" onChange={(e) => handleDirectImageGenerate(e, 'flashcard')} />
+          </div>
+
+          <Progress value={(15/20)*100} className="h-2 rounded-full bg-muted [&>div]:bg-primary" />
+        </CardContent>
+      </Card>
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-12 pb-12">
         {flashcards.length > 0 && (
           <FlashcardPreview 
@@ -404,6 +532,74 @@ export default function TopicDetailPage() {
             onDeleteClick={handleDeleteQuizQuestion}
           />
         )}
+      </div>
+
+      <hr className="border-t border-border/30 my-8" />
+
+      <div className="grid lg:grid-cols-2 gap-8 pb-12">
+        {/* Study Activity Section */}
+        <ActivityHeatmap 
+          sessions={sessions} 
+          subtitle="Your study consistency for this topic" 
+        />
+
+        {/* Score & Session History Section */}
+        <div className="space-y-4">
+          <p className="text-xs text-muted-foreground uppercase tracking-wider mb-2">
+            Quiz scores and sessions over time
+          </p>
+          <Card className="border-border bg-card rounded-3xl overflow-hidden shadow-sm h-full flex flex-col">
+            <CardHeader className="pb-4 border-b border-border/50">
+              <CardTitle className="font-serif text-lg font-bold flex items-center gap-2">
+                <BarChart3 className="w-5 h-5 text-mint" />
+                Score & Session History
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-8 flex-1">
+              {sessions.length > 0 ? (
+                <div className="h-[300px] w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={studyTimeData} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
+                      <XAxis 
+                        dataKey="day" 
+                        stroke="var(--muted-foreground)" 
+                        fontSize={11} 
+                        tickLine={false} 
+                        axisLine={false} 
+                        tick={{ fill: 'var(--muted-foreground)', fontWeight: 600 }}
+                      />
+                      <YAxis 
+                        stroke="var(--muted-foreground)" 
+                        fontSize={11} 
+                        tickLine={false} 
+                        axisLine={false} 
+                        tick={{ fill: 'var(--muted-foreground)', fontWeight: 600 }}
+                      />
+                      <RechartsTooltip 
+                        cursor={{ fill: 'var(--primary)', opacity: 0.05 }}
+                        contentStyle={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', borderRadius: '12px' }}
+                      />
+                      <Bar 
+                        dataKey="count" 
+                        radius={[6, 6, 0, 0]} 
+                        barSize={24}
+                      >
+                        {studyTimeData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.count > 0 ? 'var(--primary)' : 'var(--muted)'} />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center h-40 text-muted-foreground">
+                  <p className="text-sm font-medium">No sessions yet for this topic.</p>
+                  <p className="text-xs mt-1">Complete a flashcard or quiz session to see your history here.</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
       </div>
 
       <FlashcardModal 

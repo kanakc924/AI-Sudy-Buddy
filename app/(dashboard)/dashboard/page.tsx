@@ -1,8 +1,9 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
-import { BookOpen, Brain, Target, Flame, AlertTriangle, ArrowRight } from 'lucide-react'
+import { BookOpen, Brain, Target, Flame, AlertTriangle, ArrowRight, Search, User as UserIcon, Image as ImageIcon, Sparkles } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
 import { getProgress } from '@/services/api'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -10,10 +11,12 @@ import { Progress } from '@/components/ui/progress'
 import { AreaChart, Area, XAxis, YAxis, Tooltip as RechartsTooltip, ResponsiveContainer } from 'recharts'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { LoadingSkeleton } from '@/components/loading-skeleton'
 import Link from 'next/link'
 
 export default function DashboardPage() {
+  const router = useRouter()
   const { user } = useAuth()
   const [data, setData] = useState<any>(null)
   const [loading, setLoading] = useState(true)
@@ -58,9 +61,12 @@ export default function DashboardPage() {
   ]
 
   // Generate 12 weeks * 7 days heatmap mock if missing
-  const heatmapData = Array.from({ length: 12 * 7 }).map((_, i) => ({
+  const heatmapData = data?.activityHeatmap ? Object.keys(data.activityHeatmap).map(date => ({
+    date,
+    count: data.activityHeatmap[date]
+  })) : Array.from({ length: 12 * 7 }).map((_, i) => ({
     date: `Day ${i}`,
-    count: Math.random() > 0.6 ? Math.floor(Math.random() * 5) : 0
+    count: 0
   }))
   
   const getHeatmapColor = (count: number) => {
@@ -75,37 +81,97 @@ export default function DashboardPage() {
   const usagePercent = Math.min(100, (aiUsage.count / aiUsage.max) * 100)
   const isUsageHigh = usagePercent >= 80
 
-  const weakTopics = data?.weakTopics || [
-    { _id: '1', name: 'Mitochondria function', subject: 'Biology', score: 45 },
-    { _id: '2', name: 'Derivative rules', subject: 'Calculus', score: 55 }
-  ]
+  const weakTopics = data?.weakTopics || []
 
-  const recentSessions = data?.recentSessions || [
-    { _id: '1', type: 'quiz', topic: 'React Hooks', subject: 'Web Dev', score: 90, timeAgo: '2h ago' },
-    { _id: '2', type: 'flashcard', topic: 'French Vocab', subject: 'Languages', score: 100, timeAgo: '5h ago' }
-  ]
+  const recentSessions = data?.recentSessions || []
 
   return (
     <div className="p-4 md:p-8 max-w-7xl mx-auto space-y-8 animate-in fade-in duration-500">
-      <div className="flex flex-col gap-1">
-        <h1 className="font-serif text-3xl md:text-4xl text-foreground">
-          Welcome back, <span className="text-primary italic">{user?.name?.split(' ')[0] || 'Student'}</span>
-        </h1>
-        <p className="text-muted-foreground">Here's your study overview for today.</p>
+      {/* Header */}
+      <div className="flex items-center justify-between gap-4">
+        <div className="flex flex-col">
+          <h1 className="font-serif text-3xl font-bold tracking-tight">AI Study Buddy</h1>
+          <div className="flex items-center gap-2 mt-1 text-sm text-muted-foreground">
+            <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-primary/10 border border-primary/20">
+              <Flame className="w-3.5 h-3.5 text-primary" />
+              <span className="font-medium text-primary">{data?.currentStreak || 0} Day Streak</span>
+            </div>
+          </div>
+        </div>
+        <div className="flex items-center gap-3">
+          <div className="relative hidden md:block">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input placeholder="Search materials..." className="w-64 h-10 pl-9 bg-card border-border rounded-xl focus-visible:ring-primary/30" />
+          </div>
+          <Button variant="outline" size="icon" className="rounded-xl border-border bg-card">
+            <Search className="w-5 h-5 md:hidden" />
+            <UserIcon className="w-5 h-5 hidden md:block" />
+          </Button>
+        </div>
       </div>
 
+      {/* Core UI Block: Goal Card */}
+      <motion.div 
+        initial={{ opacity: 0, scale: 0.98 }} 
+        animate={{ opacity: 1, scale: 1 }}
+        className="relative overflow-hidden rounded-3xl p-8 bg-linear-to-br from-[#8F8DF2]/20 to-[#C4F2E8]/20 border border-primary/10"
+      >
+        <div className="relative z-10 flex flex-col md:flex-row justify-between gap-8">
+          <div className="space-y-4 max-w-xl">
+            <h2 className="text-2xl md:text-3xl font-serif font-bold leading-tight">
+              Today&apos;s Study Goal: <br />
+              <span className="text-primary italic">Keep the momentum going!</span>
+            </h2>
+            <p className="text-muted-foreground text-sm md:text-base max-w-md">
+              You&apos;ve completed <span className="text-foreground font-bold">{data?.todaySessionCount || 0}</span> sessions today. 
+              {data?.todaySessionCount >= 5 
+                ? " Great job on hitting your rhythm!" 
+                : " Try to complete a few more to reach your peak performance."}
+            </p>
+            <div className="flex flex-wrap gap-3 pt-2">
+              <Button onClick={() => router.push('/generate')} className="bg-primary hover:bg-primary/90 text-white rounded-2xl h-12 px-6 shadow-lg shadow-primary/20">
+                <ImageIcon className="w-4 h-4 mr-2" />
+                Generate from Image
+              </Button>
+              <div className="flex -space-x-2">
+                {[1, 2, 3].map(i => (
+                  <div key={i} className="w-10 h-10 rounded-full border-2 border-background bg-card flex items-center justify-center overflow-hidden">
+                    <UserIcon className="w-5 h-5 text-muted-foreground" />
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+          <Card className="glass-card border-white/10 shrink-0 w-full md:w-64">
+            <CardContent className="p-6 space-y-4">
+              <div className="flex justify-between items-center">
+                <span className="text-sm font-medium">Topic Mastery</span>
+                <span className="text-primary font-bold">{data?.topicProgress?.percentage || 0}%</span>
+              </div>
+              <Progress value={data?.topicProgress?.percentage || 0} className="h-2 [&>div]:bg-primary" />
+              <div className="text-[10px] text-muted-foreground uppercase tracking-widest text-center">
+                {data?.topicProgress?.completed} of {data?.topicProgress?.total} topics mastered
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+        {/* Abstract background shapes */}
+        <div className="absolute -top-24 -right-24 w-64 h-64 bg-primary/10 rounded-full blur-3xl" />
+        <div className="absolute -bottom-24 -left-24 w-64 h-64 bg-mint/10 rounded-full blur-3xl" />
+      </motion.div>
+
+      {/* Simple Stats grid (re-using old one but updated) */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {stats.map((stat, i) => (
-          <motion.div key={i} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }}>
-            <Card className="glass-card glow-hover border-border h-full">
-              <CardContent className="p-4 flex flex-col sm:flex-row items-start sm:items-center gap-4">
-                <div className={`p-3 rounded-xl border ${stat.colorClass} shrink-0`}>
-                  <stat.icon className="w-6 h-6" />
+          <motion.div key={i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
+            <Card className="border-border bg-card rounded-2xl h-full transition-all hover:border-primary/30">
+              <CardContent className="p-4 flex items-center gap-4">
+                <div className="p-2.5 rounded-xl bg-muted border border-border">
+                  <stat.icon className="w-5 h-5 text-foreground" />
                 </div>
-                <div className="flex flex-col">
-                  <p className="text-[10px] sm:text-xs uppercase tracking-wider text-muted-foreground font-medium">{stat.label}</p>
-                  <p className="text-xl sm:text-2xl font-serif font-bold text-foreground mt-0.5">{stat.value}</p>
-                  {stat.subtext && <p className="text-[10px] text-muted-foreground mt-0.5">{stat.subtext}</p>}
+                <div>
+                  <p className="text-[10px] uppercase tracking-wide text-muted-foreground font-semibold">{stat.label}</p>
+                  <p className="text-lg font-bold font-serif">{stat.value}</p>
                 </div>
               </CardContent>
             </Card>
@@ -116,27 +182,30 @@ export default function DashboardPage() {
       <div className="grid lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
           {/* Heatmap */}
-          <Card className="glass-card border-border overflow-hidden">
-            <CardHeader className="pb-3 border-b border-border/50 bg-card/30">
-              <CardTitle className="font-serif text-xl">Study Activity</CardTitle>
+          <Card className="border-border bg-card rounded-3xl overflow-hidden shadow-sm">
+            <CardHeader className="pb-3 border-b border-border/50">
+              <CardTitle className="font-serif text-xl font-bold flex items-center gap-2">
+                <Target className="w-5 h-5 text-primary" />
+                Study Activity
+              </CardTitle>
             </CardHeader>
             <CardContent className="p-6">
               <div className="overflow-x-auto scrollbar-hide">
                 <div className="min-w-[600px]">
                   <TooltipProvider delayDuration={0}>
                     <div className="flex gap-2 items-start">
-                      <div className="flex flex-col justify-between h-[116px] text-xs text-muted-foreground pr-2 pt-2">
+                      <div className="flex flex-col justify-between h-[116px] text-[10px] uppercase tracking-tighter text-muted-foreground pr-2 pt-2 font-bold">
                         <span>Mon</span>
                         <span>Wed</span>
                         <span>Fri</span>
                       </div>
-                      <div className="grid grid-flow-col grid-rows-7 gap-1 flex-1">
+                      <div className="grid grid-flow-col grid-rows-7 gap-1.5 flex-1">
                         {heatmapData.map((day, i) => (
                           <Tooltip key={i}>
                             <TooltipTrigger>
-                              <div className={`w-3 h-3 rounded-sm ${getHeatmapColor(day.count)} border border-border/10 hover:border-foreground/50 transition-colors`} />
+                              <div className={`w-3.5 h-3.5 rounded-[3px] ${getHeatmapColor(day.count)} border border-border/10 hover:ring-2 hover:ring-primary/30 transition-all`} />
                             </TooltipTrigger>
-                            <TooltipContent side="top" className="bg-popover text-popover-foreground border-border text-xs">
+                            <TooltipContent side="top" className="bg-popover text-popover-foreground border-border text-xs rounded-lg">
                               {day.count} sessions on {day.date}
                             </TooltipContent>
                           </Tooltip>
@@ -144,11 +213,11 @@ export default function DashboardPage() {
                       </div>
                     </div>
                   </TooltipProvider>
-                  <div className="flex items-center justify-end gap-2 mt-4 text-xs text-muted-foreground">
+                  <div className="flex items-center justify-end gap-3 mt-6 text-[10px] text-muted-foreground font-bold uppercase tracking-widest">
                     <span>Less</span>
-                    <div className="flex gap-1">
+                    <div className="flex gap-1.5">
                       {[0, 1, 2, 3, 4].map(c => (
-                        <div key={c} className={`w-3 h-3 rounded-sm ${getHeatmapColor(c)} border border-border/10`} />
+                        <div key={c} className={`w-3 h-3 rounded-[2px] ${getHeatmapColor(c)}`} />
                       ))}
                     </div>
                     <span>More</span>
@@ -159,26 +228,52 @@ export default function DashboardPage() {
           </Card>
 
           {/* Score Trend */}
-          <Card className="glass-card border-border">
-            <CardHeader className="pb-3 border-b border-border/50 bg-card/30">
-              <CardTitle className="font-serif text-xl">Score Trend</CardTitle>
+          <Card className="border-border bg-card rounded-3xl overflow-hidden shadow-sm">
+            <CardHeader className="pb-3 border-b border-border/50">
+              <CardTitle className="font-serif text-xl font-bold flex items-center gap-2">
+                <Sparkles className="w-5 h-5 text-mint" />
+                Performance Trend
+              </CardTitle>
             </CardHeader>
-            <CardContent className="p-6 h-[250px] w-full">
+            <CardContent className="p-6 h-[280px] w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={scoreTrend} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                   <defs>
                     <linearGradient id="colorScore" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="var(--primary)" stopOpacity={0.3} />
+                      <stop offset="5%" stopColor="var(--primary)" stopOpacity={0.2} />
                       <stop offset="95%" stopColor="var(--primary)" stopOpacity={0} />
                     </linearGradient>
                   </defs>
-                  <XAxis dataKey="date" stroke="var(--muted-foreground)" fontSize={12} tickLine={false} axisLine={false} />
-                  <YAxis stroke="var(--muted-foreground)" fontSize={12} tickLine={false} axisLine={false} domain={[0, 100]} />
-                  <RechartsTooltip 
-                    contentStyle={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', borderRadius: '8px', color: 'var(--foreground)' }}
-                    itemStyle={{ color: 'var(--primary)', fontWeight: 'bold' }}
+                  <XAxis 
+                    dataKey="date" 
+                    stroke="var(--muted-foreground)" 
+                    fontSize={11} 
+                    tickLine={false} 
+                    axisLine={false} 
+                    tick={{ fill: 'var(--muted-foreground)', fontWeight: 600 }}
                   />
-                  <Area type="monotone" dataKey="score" stroke="var(--primary)" strokeWidth={2} fillOpacity={1} fill="url(#colorScore)" />
+                  <YAxis 
+                    stroke="var(--muted-foreground)" 
+                    fontSize={11} 
+                    tickLine={false} 
+                    axisLine={false} 
+                    domain={[0, 100]} 
+                    tick={{ fill: 'var(--muted-foreground)', fontWeight: 600 }}
+                  />
+                  <RechartsTooltip 
+                    contentStyle={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', borderRadius: '12px', fontSize: '12px', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }}
+                    itemStyle={{ color: 'var(--primary)', fontWeight: 'bold' }}
+                    cursor={{ stroke: 'var(--primary)', strokeWidth: 1, strokeDasharray: '4 4' }}
+                  />
+                  <Area 
+                    type="monotone" 
+                    dataKey="score" 
+                    stroke="var(--primary)" 
+                    strokeWidth={3} 
+                    fillOpacity={1} 
+                    fill="url(#colorScore)" 
+                    animationDuration={1500}
+                  />
                 </AreaChart>
               </ResponsiveContainer>
             </CardContent>
@@ -187,87 +282,99 @@ export default function DashboardPage() {
 
         <div className="space-y-6">
           {/* AI Usage */}
-          <Card className="glass-card border-border">
+          <Card className="border-border bg-card rounded-3xl shadow-sm border-l-4 border-l-primary">
             <CardContent className="p-6">
               <div className="flex justify-between items-end mb-4">
-                <div className="flex items-center gap-2">
-                  <div className="bg-primary/20 p-2 rounded-lg">
-                    <Brain className="w-4 h-4 text-primary" />
+                <div className="flex items-center gap-3">
+                  <div className="bg-primary/10 p-2.5 rounded-2xl">
+                    <Brain className="w-5 h-5 text-primary" />
                   </div>
-                  <h3 className="font-medium text-sm text-muted-foreground">AI Generation Usage</h3>
+                  <div>
+                    <h3 className="font-bold text-sm">AI Power</h3>
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold">Daily Requests</p>
+                  </div>
                 </div>
                 <div className="flex items-baseline gap-1">
-                  <span className="font-serif text-2xl font-bold">{aiUsage.count}</span>
-                  <span className="text-muted-foreground text-sm">/ {aiUsage.max}</span>
+                  <span className="font-serif text-3xl font-bold">{aiUsage.count}</span>
+                  <span className="text-muted-foreground text-sm font-medium">/ {aiUsage.max}</span>
                 </div>
               </div>
               <Progress 
                 value={usagePercent} 
-                className={`h-2 mb-2 ${isUsageHigh ? 'bg-destructive/20 [&>div]:bg-destructive' : '[&>div]:bg-primary'}`} 
+                className={`h-2.5 mb-2 rounded-full ${isUsageHigh ? 'bg-destructive/10 [&>div]:bg-destructive' : 'bg-muted [&>div]:bg-primary'}`} 
               />
-              <div className="flex justify-between items-center text-xs">
+              <div className="flex justify-between items-center text-[10px] font-bold uppercase tracking-widest">
                 {isUsageHigh ? (
-                  <span className="text-destructive flex items-center gap-1 font-medium"><AlertTriangle className="w-3 h-3" /> Nearing limit</span>
+                  <span className="text-destructive flex items-center gap-1"><AlertTriangle className="w-3 h-3" /> Nearing limit</span>
                 ) : (
-                  <span className="text-muted-foreground">Resets at midnight</span>
+                  <span className="text-muted-foreground">Resets in 12h</span>
                 )}
+                <span className="text-primary hover:underline cursor-pointer">Upgrade Plan</span>
               </div>
             </CardContent>
           </Card>
 
-          {/* Needs Review */}
-          <Card className="glass-card border-border">
-            <CardHeader className="pb-3 border-b border-border/50 bg-card/30">
-              <CardTitle className="font-serif text-xl">Needs Review</CardTitle>
-            </CardHeader>
-            <CardContent className="p-4 flex flex-col gap-4">
-              {weakTopics.length > 0 ? weakTopics.map((topic: any, i: number) => (
-                <div key={i} className="flex items-center justify-between group">
-                  <div className="flex flex-col overflow-hidden max-w-[140px] sm:max-w-[200px]">
-                    <span className="font-medium text-sm truncate">{topic.title}</span>
-                    <span className="text-xs text-muted-foreground truncate">{topic.subject}</span>
-                    <Progress value={topic.score} className="h-1 mt-1.5 [&>div]:bg-destructive" />
-                  </div>
-                  <Link href={`/topics/${topic._id}`}>
-                    <Button variant="ghost" size="sm" className="h-8 text-primary hover:text-primary hover:bg-primary/10">
-                      Study
-                    </Button>
-                  </Link>
-                </div>
-              )) : (
-                <p className="text-sm text-muted-foreground text-center py-4">You're doing great! No weak topics found.</p>
-              )}
-            </CardContent>
-          </Card>
+          {/* Subject Cards */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between px-1">
+              <h3 className="font-serif text-xl font-bold">Your Subjects</h3>
+              <Link href="/subjects">
+                <Button variant="ghost" size="sm" className="text-primary font-bold text-xs uppercase tracking-widest">View All</Button>
+              </Link>
+            </div>
+            {data?.subjectMastery?.length > 0 ? data.subjectMastery.map((item: any, i: number) => (
+              <motion.div key={i} whileHover={{ x: 5 }} className="group" onClick={() => router.push(`/subjects`)}>
+                <Card className="border-border bg-card rounded-2xl overflow-hidden transition-all hover:border-primary/50 cursor-pointer">
+                  <CardContent className="p-4 flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0">
+                      <BookOpen className="w-6 h-6 text-primary" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex justify-between items-start">
+                        <h4 className="font-bold text-sm truncate">{item.subject}</h4>
+                        <span className="text-[10px] font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded uppercase">{item.score}% Mastery</span>
+                      </div>
+                      <Progress value={item.score} className="h-1 mt-2 bg-muted [&>div]:bg-primary" />
+                    </div>
+                    <ArrowRight className="w-4 h-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                  </CardContent>
+                </Card>
+              </motion.div>
+            )) : (
+              <Card className="border-border border-dashed bg-transparent rounded-2xl p-8 text-center text-balance">
+                <p className="text-sm text-muted-foreground mb-4">Add your first subject to start tracking your mastery.</p>
+                <Link href="/subjects">
+                  <Button variant="outline" className="rounded-xl text-xs font-bold uppercase">Add Subject</Button>
+                </Link>
+              </Card>
+            )}
+          </div>
 
-          {/* Recent Sessions */}
-          <Card className="glass-card border-border">
-            <CardHeader className="pb-3 border-b border-border/50 bg-card/30 flex flex-row items-center justify-between">
-              <CardTitle className="font-serif text-xl">History</CardTitle>
+          {/* History */}
+          <Card className="border-border bg-card rounded-3xl shadow-sm">
+            <CardHeader className="pb-3 border-b border-border/50">
+              <CardTitle className="font-serif text-lg font-bold">Study History</CardTitle>
             </CardHeader>
             <CardContent className="p-4 flex flex-col gap-4">
               {recentSessions.length > 0 ? recentSessions.map((session: any, i: number) => (
-                <div key={i} className="flex items-center gap-3">
-                  <div className={`p-2 rounded-lg shrink-0 ${session.type === 'quiz' ? 'bg-primary/15 text-primary' : 'bg-gold/15 text-gold'}`}>
-                    {session.type === 'quiz' ? <Brain className="w-4 h-4" /> : <BookOpen className="w-4 h-4" />}
+                <div key={i} className="flex items-center gap-3 p-2 rounded-xl hover:bg-muted/50 transition-colors">
+                  <div className={`p-2.5 rounded-xl shrink-0 ${session.type === 'quiz' ? 'bg-primary/10 text-primary' : 'bg-mint/10 text-mint'}`}>
+                    {session.type === 'quiz' ? <Brain className="w-4 h-4" /> : <Sparkles className="w-4 h-4" />}
                   </div>
                   <div className="flex flex-col flex-1 overflow-hidden">
-                    <span className="font-medium text-sm truncate">{session.topic}</span>
-                    <div className="flex justify-between items-center text-xs text-muted-foreground">
+                    <span className="font-bold text-xs truncate">{session.topic}</span>
+                    <div className="flex justify-between items-center text-[10px] text-muted-foreground font-medium uppercase tracking-tighter">
                       <span className="truncate">{session.subject}</span>
                       <span>{session.timeAgo}</span>
                     </div>
                   </div>
-                  <div className={`font-serif font-bold text-sm shrink-0 ${session.score >= 80 ? 'text-[#4CAF50]' : session.score >= 50 ? 'text-gold' : 'text-destructive'}`}>
+                  <div className={`font-serif font-bold text-sm shrink-0 ${session.score >= 80 ? 'text-mint' : session.score >= 50 ? 'text-primary' : 'text-destructive'}`}>
                     {session.score}%
                   </div>
                 </div>
               )) : (
-                <p className="text-sm text-muted-foreground text-center py-4">No recent sessions.</p>
+                <p className="text-xs text-muted-foreground text-center py-4">No recent activity.</p>
               )}
-              <Button variant="outline" className="w-full mt-2 text-xs border-border/50 hover:bg-card">
-                View All Activity
-              </Button>
             </CardContent>
           </Card>
         </div>

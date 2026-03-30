@@ -49,7 +49,12 @@ export default function FlashcardSessionPage() {
           const actualCards = flatCards.length > 0 ? flatCards : (res.data.flashcards || res.data)
           
           if (Array.isArray(actualCards) && actualCards.length > 0) {
-            setCards(actualCards)
+            const variants: ('mint' | 'purple' | 'pink' | 'blue')[] = ['mint', 'purple', 'pink', 'blue']
+            const cardsWithVariants = actualCards.map((card: any, i: number) => ({
+              ...card,
+              colorVariant: variants[i % variants.length]
+            }))
+            setCards(cardsWithVariants)
           } else {
             toast.error('No valid flashcards found')
           }
@@ -255,6 +260,7 @@ export default function FlashcardSessionPage() {
               isFlipped={isFlipped} 
               onFlip={() => setIsFlipped(!isFlipped)} 
               onEdit={handleEditClick}
+              colorVariant={cards[currentIndex].colorVariant}
             />
           </motion.div>
         </AnimatePresence>

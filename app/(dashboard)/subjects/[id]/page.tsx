@@ -13,7 +13,10 @@ import Link from 'next/link'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog'
 import { toast } from 'sonner'
-import { ChevronRight } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Bell, Calendar, BarChart3, Clock, Play, Award } from 'lucide-react'
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
+import { Progress } from '@/components/ui/progress'
+import { useAuth } from '@/context/AuthContext'
 
 export default function TopicsPage() {
   const router = useRouter()
@@ -89,24 +92,49 @@ export default function TopicsPage() {
   }
 
   return (
-    <div className="p-4 md:p-8 max-w-7xl mx-auto min-h-full">
-      {/* Breadcrumb & Header */}
-      <div className="flex flex-col gap-6 mb-10">
-        <nav className="flex items-center space-x-1 text-sm text-muted-foreground">
-          <Link href="/subjects" className="hover:text-foreground transition-colors">Subjects</Link>
-          <ChevronRight className="w-4 h-4" />
-          <span className="text-foreground font-medium truncate">{subjectTitle}</span>
-        </nav>
-        
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+    <div className="p-4 md:p-8 max-w-7xl mx-auto min-h-screen space-y-8 animate-in fade-in duration-500">
+      {/* Header */}
+      <div className="flex items-center justify-between border-b border-border/50 pb-6">
+        <div className="flex items-center gap-4">
+          <Button variant="outline" size="icon" onClick={() => router.back()} className="rounded-xl border-border bg-card">
+            <ChevronLeft className="w-5 h-5" />
+          </Button>
           <div>
-            <h1 className="font-serif text-3xl md:text-4xl text-foreground truncate">{subjectTitle}</h1>
-            <p className="text-muted-foreground mt-1">Select a topic to start studying</p>
+            <h1 className="font-serif text-2xl font-bold tracking-tight">
+              Subject: <span className="text-primary italic">{subjectTitle}</span>
+            </h1>
+            <p className="text-sm text-muted-foreground font-medium uppercase tracking-widest mt-1">Track your progress and access all associated topics.</p>
           </div>
-          <Button onClick={() => setIsModalOpen(true)} className="bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl w-full sm:w-auto h-12 px-6 shrink-0 shadow-lg shadow-primary/20">
-            <Plus className="w-5 h-5 mr-2" /> New Topic
+        </div>
+        <div className="flex items-center gap-3">
+          <Button variant="outline" size="icon" className="rounded-xl border-border bg-card relative">
+            <Bell className="w-5 h-5" />
+            <span className="absolute top-2.5 right-2.5 w-2 h-2 bg-primary rounded-full" />
+          </Button>
+          <Button onClick={() => setIsModalOpen(true)} className="bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl h-10 px-4 shadow-lg shadow-primary/20 transition-all hover:scale-[1.02] active:scale-[0.98]">
+            <Plus className="w-4 h-4 mr-2" /> New Topic
           </Button>
         </div>
+      </div>
+
+      {/* Subject Stats Bar */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {[
+          { label: 'Total Topics', value: topics.length, icon: BookOpen, color: 'text-primary', bg: 'bg-primary/10' },
+          { label: 'Mastery', value: '68%', icon: Award, color: 'text-mint', bg: 'bg-mint/10' },
+          { label: 'Study Time', value: '12h', icon: Clock, color: 'text-blue', bg: 'bg-blue/10' },
+          { label: 'Last Activity', value: '2d ago', icon: Calendar, color: 'text-pink', bg: 'bg-pink/10' },
+        ].map((stat, i) => (
+          <Card key={i} className="border-border bg-card rounded-2xl p-4 shadow-sm flex items-center gap-3">
+            <div className={`w-10 h-10 rounded-xl ${stat.bg} flex items-center justify-center`}>
+              <stat.icon className={`w-5 h-5 ${stat.color}`} />
+            </div>
+            <div>
+              <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">{stat.label}</p>
+              <h3 className="text-lg font-bold">{stat.value}</h3>
+            </div>
+          </Card>
+        ))}
       </div>
 
       {loading ? (
@@ -120,51 +148,73 @@ export default function TopicsPage() {
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           <AnimatePresence>
-            {topics.map((topic, index) => (
-              <motion.div
-                key={topic._id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.95 }}
-                transition={{ delay: index * 0.05 }}
-                onClick={() => router.push(`/topics/${topic._id}`)}
-                className="glass-card glow-hover rounded-xl p-6 cursor-pointer flex flex-col group h-full border-border/60 relative overflow-hidden"
-              >
-                <div className="absolute inset-0 bg-linear-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                
-                <div className="relative z-10 flex flex-col h-full">
-                  <div className="flex items-start justify-between mb-4 gap-4">
-                    <h3 className="font-serif text-xl text-foreground font-medium leading-tight line-clamp-2">{topic.title}</h3>
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      onClick={(e) => { e.stopPropagation(); setDeletingId(topic._id); setIsDeleteDialogOpen(true); }}
-                      className="h-8 w-8 shrink-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  </div>
-                  
-                  <p className="text-sm text-muted-foreground line-clamp-2 mb-6 flex-1">
-                    {topic.notes ? topic.notes.substring(0, 100) + '...' : 'No notes written yet. Start gathering study materials.'}
-                  </p>
-                  
-                  <div className="flex items-center justify-between pt-4 border-t border-border/50">
-                    <div className="flex items-center gap-2">
-                      <span className="flex items-center gap-1.5 text-xs font-medium bg-card border border-border px-2 py-1 rounded-md text-muted-foreground">
-                        <Sparkles className="w-3 h-3 text-primary" /> {topic.flashcardsCount || Array.isArray(topic.flashcards) && topic.flashcards.length || 0}
-                      </span>
-                      <span className="flex items-center gap-1.5 text-xs font-medium bg-card border border-border px-2 py-1 rounded-md text-muted-foreground">
-                        <Brain className="w-3 h-3 text-gold" /> {topic.quizzesCount || Array.isArray(topic.quizzes) && topic.quizzes.length || 0}
-                      </span>
+            {topics.map((topic, index) => {
+              const progress = Math.floor(Math.random() * 60) + 30 // Mock progress
+              const isMastered = progress > 80
+              
+              return (
+                <motion.div
+                  key={topic._id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  transition={{ delay: index * 0.05 }}
+                  onClick={() => router.push(`/topics/${topic._id}`)}
+                  className="group relative"
+                >
+                  <Card className="bg-card rounded-3xl overflow-hidden shadow-sm transition-all duration-300 hover:shadow-xl hover:-translate-y-1 cursor-pointer h-full border-border/60">
+                    <div className="p-6 space-y-4">
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="space-y-1">
+                          <h3 className="font-serif text-xl font-bold leading-tight line-clamp-2 group-hover:text-primary transition-colors">
+                            {topic.title}
+                          </h3>
+                          <div className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-widest ${isMastered ? 'bg-mint/10 text-mint' : 'bg-primary/10 text-primary'}`}>
+                            {isMastered ? 'Mastered' : 'In Progress'}
+                          </div>
+                        </div>
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          onClick={(e) => { e.stopPropagation(); setDeletingId(topic._id); setIsDeleteDialogOpen(true); }}
+                          className="h-8 w-8 shrink-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-xl"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+
+                      <p className="text-sm text-muted-foreground line-clamp-2 min-h-[40px]">
+                        {topic.notes ? topic.notes.substring(0, 80) + '...' : 'Dive into details or extract key factors from your materials.'}
+                      </p>
+
+                      <div className="space-y-2">
+                        <div className="flex justify-between text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                          <span>Mastery</span>
+                          <span>{progress}%</span>
+                        </div>
+                        <Progress value={progress} className="h-1.5 rounded-full bg-muted [&>div]:bg-primary" />
+                      </div>
+
+                      <div className="flex items-center justify-between pt-4 border-t border-border/50">
+                        <div className="flex items-center gap-3">
+                          <div className="flex items-center gap-1.5 text-xs font-bold text-muted-foreground">
+                            <Sparkles className="w-4 h-4 text-primary" />
+                            {topic.flashcardsCount || (topic.flashcards?.length || 0)}
+                          </div>
+                          <div className="flex items-center gap-1.5 text-xs font-bold text-muted-foreground">
+                            <Brain className="w-4 h-4 text-mint" />
+                            {topic.quizzesCount || (topic.quizzes?.length || 0)}
+                          </div>
+                        </div>
+                        <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center group-hover:bg-primary transition-colors">
+                          <ArrowRight className="w-4 h-4 text-primary group-hover:text-white transition-colors" />
+                        </div>
+                      </div>
                     </div>
-                    <span className="flex items-center gap-1 text-xs text-primary font-medium group-hover:underline">
-                      Study <ArrowRight className="w-3 h-3 group-hover:translate-x-1 transition-transform" />
-                    </span>
-                  </div>
-                </div>
-              </motion.div>
-            ))}
+                  </Card>
+                </motion.div>
+              )
+            })}
           </AnimatePresence>
         </div>
       )}
