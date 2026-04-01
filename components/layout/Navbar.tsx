@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { Menu, User, LogOut } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -12,6 +12,7 @@ interface NavbarProps {
 
 export function Navbar({ onMenuClick }: NavbarProps) {
   const pathname = usePathname();
+  const router = useRouter();
   const { logout, user } = useAuth();
   const [dropdownOpen, setDropdownOpen] = React.useState(false);
 
@@ -55,18 +56,41 @@ export function Navbar({ onMenuClick }: NavbarProps) {
         {dropdownOpen && (
           <>
             <div className="fixed inset-0 z-40" onClick={() => setDropdownOpen(false)} />
-            <div className="absolute right-0 mt-2 w-48 bg-surface border border-border2 rounded-lg shadow-xl py-1 z-50 animate-in fade-in zoom-in-95 duration-100">
-              <div className="px-4 py-2 border-b border-border2">
-                <p className="text-sm font-medium">{user?.name}</p>
-                <p className="text-xs text-muted truncate">{user?.email}</p>
+            <div className="absolute right-0 mt-3 w-80 bg-[#252833] border border-[#323645] rounded-3xl shadow-2xl z-50 animate-in fade-in zoom-in-95 duration-200 overflow-hidden">
+              {/* Header Section */}
+              <div className="p-6 flex flex-col items-center text-center space-y-3">
+                <div className="w-20 h-20 rounded-full bg-primary flex items-center justify-center text-3xl font-bold text-primary-foreground shadow-lg shadow-primary/20">
+                  {user?.name?.charAt(0).toUpperCase() || "U"}
+                </div>
+                <div className="space-y-1">
+                  <h3 className="text-xl font-semibold text-white">Hi, {user?.name?.split(' ')[0]}!</h3>
+                  <p className="text-sm text-muted-foreground">{user?.email}</p>
+                </div>
+                
+                {/* Manage Account Pill Button */}
+                <button 
+                  onClick={() => {
+                    router.push('/settings');
+                    setDropdownOpen(false);
+                  }}
+                  className="mt-4 px-6 py-2 rounded-full border border-[#323645] text-sm font-medium text-white hover:bg-[#323645] hover:border-[#8F8DF2]/50 transition-all active:scale-95"
+                >
+                  Manage Account
+                </button>
               </div>
-              <button 
-                onClick={logout}
-                className="w-full text-left px-4 py-2 text-sm text-red hover:bg-red/10 flex items-center gap-2"
-              >
-                <LogOut size={16} />
-                Logout
-              </button>
+
+              {/* Footer Section */}
+              <div className="border-t border-[#323645] p-2 bg-[#1C1E26]/50">
+                <button 
+                  onClick={logout}
+                  className="w-full flex items-center justify-center gap-3 px-4 py-3 rounded-2xl text-sm font-medium text-red-400 hover:bg-red-400/10 transition-colors group"
+                >
+                  <div className="p-2 rounded-lg bg-red-400/10 group-hover:bg-red-400/20 transition-colors">
+                    <LogOut size={18} />
+                  </div>
+                  Sign out
+                </button>
+              </div>
             </div>
           </>
         )}

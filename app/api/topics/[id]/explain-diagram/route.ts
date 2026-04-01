@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
+import mongoose from 'mongoose'
+
 import connectDB from '@/lib/db'
 import { verifyToken } from '@/lib/auth'
 import { uploadImageToCloudinary } from '@/services/cloudinary.service'
-import { generateText } from 'ai'
-import { createOpenRouter } from '@openrouter/ai-sdk-provider'
-
-const openrouter = createOpenRouter({
-  apiKey: process.env.OPENROUTER_API_KEY!,
-})
+import { explainDiagram } from '@/services/ai.service'
+import { sanitizeText } from '@/services/sanitizer.service'
+import { errorResponse } from '@/lib/handleApiError'
+import { aiRateLimiter } from '@/lib/rateLimiter'
 
 export async function POST(
   req: NextRequest,
@@ -16,21 +16,35 @@ export async function POST(
   try {
     await connectDB()
     const { id } = await params
+    
+    // Validate ObjectId
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return NextResponse.json(
+        { success: false, error: "Invalid topic ID format", code: "VALIDATION_ERROR" },
+        { status: 400 }
+      );
+    }
+
+    
     // Auth check
     const authHeader = req.headers.get('authorization')
     if (!authHeader?.startsWith('Bearer ')) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json({ success: false, error: 'Unauthorized', code: 'UNAUTHORIZED' }, { status: 401 })
     }
     const decoded = verifyToken(authHeader.split(' ')[1])
     if (!decoded) {
-      return NextResponse.json({ error: 'Invalid token' }, { status: 401 })
+      return NextResponse.json({ success: false, error: 'Invalid token', code: 'UNAUTHORIZED' }, { status: 401 })
     }
+
+    // Check rate limit
+    const rateLimitResponse = await aiRateLimiter(req as any, decoded.id);
+    if (rateLimitResponse) return rateLimitResponse;
 
     // Get the image file
     const formData = await req.formData()
     const file = formData.get('image') as File | null
     if (!file) {
-      return NextResponse.json({ error: 'No image provided' }, { status: 400 })
+      return NextResponse.json({ success: false, error: 'No image provided', code: 'VALIDATION_ERROR' }, { status: 400 })
     }
 
     // Upload to Cloudinary
@@ -38,60 +52,43 @@ export async function POST(
     const buffer = Buffer.from(arrayBuffer)
     const uploadResult = await uploadImageToCloudinary(buffer)
 
-    // Send to AI with diagram explanation prompt
-    const { text } = await generateText({
-      model: openrouter('google/gemma-3-27b-it:free'),
-      messages: [
-        {
-          role: 'user',
-          content: [
-            {
-              type: 'text',
-              text: `You are an expert teacher. I am showing you a diagram, flowchart, or chart.
+    // Send to AI with diagram explanation prompt using the robust fallback service
+    const rawText = await explainDiagram(buffer, file.type);
+    
+    // Sanitize and format the text (fix spaces, line breaks, etc.)
+    const text = await sanitizeText(rawText);
 
-Your job is to produce a structured "mini lecture" with these exact sections:
-
-## What This Diagram Shows
-[1-2 sentence overview of what this diagram represents]
-
-## Key Components
-[List every labeled element, shape, or node in the diagram with a brief explanation of what each one means]
-
-## Step-by-Step Walkthrough
-[Walk through the diagram step by step as if explaining it to a student who has never seen it. Number each step. Explain what happens at each stage, why it matters, and how it connects to the next step.]
-
-## Key Takeaways
-[3-5 bullet points summarizing the most important things to understand from this diagram]
-
-Be thorough. This is a study aid — the student needs to fully understand the diagram from your explanation alone.`,
-            },
-            {
-              type: 'image',
-              image: new URL(uploadResult.url),
-            },
-          ],
-        },
-      ],
-    })
+    // Save to Topic
+    const extension = file.name.split('.').pop() || "png";
+    const TopicModel = (await import('@/models/Topic')).default;
+    const SubjectModel = (await import('@/models/Subject')).default;
+    const updatedTopic = await TopicModel.findOneAndUpdate(
+      { _id: id, userId: decoded.id },
+      {
+        $push: {
+          sourceMaterials: {
+            type: 'diagram',
+            title: `Diagram: ${file.name}`,
+            url: uploadResult.url,
+            publicId: uploadResult.publicId,
+            extractedText: text,
+            fileName: file.name,
+            fileExtension: extension,
+            uploadedAt: new Date(),
+          }
+        }
+      },
+      { new: true }
+    ).populate({ path: "subjectId", model: SubjectModel });
 
     return NextResponse.json({
       success: true,
-      explanation: text,
+      extractedText: text,
       imageUrl: uploadResult.url,
+      data: updatedTopic
     })
 
   } catch (error: any) {
-    // Fallback model on rate limit
-    if (error?.statusCode === 429) {
-      return NextResponse.json(
-        { error: 'Rate limit reached. Try again in 60s' },
-        { status: 429 }
-      )
-    }
-    console.error('Explain diagram error:', error)
-    return NextResponse.json(
-      { error: error.message || 'Failed to explain diagram' },
-      { status: 500 }
-    )
+    return errorResponse(error)
   }
 }

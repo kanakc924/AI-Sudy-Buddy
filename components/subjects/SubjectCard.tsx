@@ -79,10 +79,10 @@ export function SubjectCard({ subject, onEdit, onDelete, index }: SubjectCardPro
       </p>
 
       {/* Meta */}
-      <div className="mt-4 flex items-center gap-4 text-xs text-muted-foreground">
+      <div className="mt-4 flex items-center gap-4 text-xs text-[#A0A6B8]">
         <div className="flex items-center gap-1">
           <FileText className="h-3.5 w-3.5" />
-          {subject.topicCount} topic{subject.topicCount !== 1 ? 's' : ''}
+          {subject.topicCount} {subject.topicCount <= 1 ? 'topic' : 'topics'}
         </div>
         <div className="flex items-center gap-1">
           <Clock className="h-3.5 w-3.5" />

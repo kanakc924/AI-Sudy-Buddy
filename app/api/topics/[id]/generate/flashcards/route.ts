@@ -5,6 +5,7 @@ import Flashcard from "../../../../../../models/Flashcard";
 import { withAuth, AuthenticatedRequest } from "../../../../../../lib/middleware";
 import { aiRateLimiter } from "../../../../../../lib/rateLimiter";
 import { generateFlashcards } from "../../../../../../services/ai.service";
+import { errorResponse } from "../../../../../../lib/handleApiError";
 
 async function generateFlashcardsRoute(req: AuthenticatedRequest, context: { params: Promise<{ id: string }> }) {
   try {
@@ -13,7 +14,7 @@ async function generateFlashcardsRoute(req: AuthenticatedRequest, context: { par
     const { id } = await context.params;
 
     // Check rate limit
-    const rateLimitResponse = aiRateLimiter(req, userId);
+    const rateLimitResponse = await aiRateLimiter(req, userId);
     if (rateLimitResponse) return rateLimitResponse;
 
     // Check for replace flag in body
@@ -29,14 +30,14 @@ async function generateFlashcardsRoute(req: AuthenticatedRequest, context: { par
 
     if (!topic) {
       return NextResponse.json(
-        { success: false, error: { message: "Topic not found", code: "NOT_FOUND" } },
+        { success: false, error: "Topic not found", code: "NOT_FOUND" },
         { status: 404 }
       );
     }
 
     if (!topic.notes || topic.notes.trim().length === 0) {
       return NextResponse.json(
-        { success: false, error: { message: "Topic has no notes to generate from", code: "NO_CONTENT" } },
+        { success: false, error: "Topic has no notes to generate from", code: "NO_CONTENT" },
         { status: 400 }
       );
     }
@@ -60,11 +61,7 @@ async function generateFlashcardsRoute(req: AuthenticatedRequest, context: { par
 
     return NextResponse.json({ success: true, data: savedCards }, { status: 201 });
   } catch (error: any) {
-    console.error("Generate Flashcards Error:", error);
-    return NextResponse.json(
-      { success: false, error: { message: error.message || "Internal Server Error", code: "INTERNAL_ERROR" } },
-      { status: 500 }
-    );
+    return errorResponse(error);
   }
 }
 

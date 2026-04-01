@@ -3,8 +3,9 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { Brain, LayoutDashboard, Settings, Plus, Flame, LogOut, ArrowRight, BookOpen } from 'lucide-react'
-import { getSubjects, getProgress } from '@/services/api'
+import { Brain, LayoutDashboard, Settings, Plus, Flame, LogOut, ArrowRight, BookOpen, ChevronDown } from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { getSubjects, getStreak } from '@/services/api'
 import { useAuth } from '@/hooks/useAuth'
 import { cn } from '@/lib/utils'
 
@@ -20,10 +21,11 @@ export function AppSidebar() {
   const { logout } = useAuth()
   const [subjects, setSubjects] = useState<any[]>([])
   const [streak, setStreak] = useState(0)
+  const [isSubjectsExpanded, setIsSubjectsExpanded] = useState(true)
 
   useEffect(() => {
     getSubjects().then(res => setSubjects(res.data)).catch(() => {})
-    getProgress().then(res => setStreak(res.data?.currentStreak || 0)).catch(() => {})
+    getStreak().then(res => setStreak(res.data?.currentStreak || 0)).catch(() => {})
   }, [])
 
   const handleLogout = () => {
@@ -57,50 +59,59 @@ export function AppSidebar() {
             <LayoutDashboard className="w-4 h-4" />
             Dashboard
           </Link>
-          <Link 
-            href="/settings"
-            className={cn(
-              "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
-              pathname === '/settings' ? "bg-sidebar-accent text-sidebar-accent-foreground" : "text-muted-foreground hover:bg-sidebar-accent/50 hover:text-foreground"
-            )}
-          >
-            <Settings className="w-4 h-4" />
-            Settings
-          </Link>
         </div>
 
-        <div>
-          <h3 className="px-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Subjects</h3>
-          <div className="flex flex-col gap-1">
-            {subjects.map((subject, i) => {
-              const color = subject.color || SUBJECT_COLORS[i % SUBJECT_COLORS.length]
-              const isActive = pathname.includes(`/subjects/${subject._id}`)
-              return (
-                <Link 
-                  key={subject._id}
-                  href={`/subjects/${subject._id}`}
-                  className={cn(
-                    "flex flex-col gap-1.5 px-3 py-2 rounded-lg text-sm transition-colors group",
-                    isActive ? "bg-sidebar-accent text-sidebar-accent-foreground" : "text-muted-foreground hover:bg-sidebar-accent/50 hover:text-foreground"
-                  )}
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-6 h-6 rounded-md flex items-center justify-center shrink-0 transition-transform group-hover:scale-110" style={{ background: `${color}15`, border: `1px solid ${color}30` }}>
-                      <BookOpen className="w-3.5 h-3.5" style={{ color }} />
-                    </div>
-                    <span className="truncate flex-1">{subject.title}</span>
-                  </div>
-                </Link>
-              )
-            })}
-            <Link 
-              href="/subjects"
-              className="flex items-center gap-3 px-3 py-2 mt-1 rounded-lg text-sm font-medium text-primary hover:bg-primary/10 transition-colors"
-            >
-              <Plus className="w-4 h-4" />
-              New Subject
-            </Link>
+        <div className="flex flex-col gap-2">
+          <div 
+            className="flex items-center justify-between px-3 mb-1 cursor-pointer group"
+            onClick={() => setIsSubjectsExpanded(!isSubjectsExpanded)}
+          >
+            <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider group-hover:text-foreground transition-colors">Subjects</h3>
+            <div className="text-muted-foreground group-hover:text-primary transition-colors">
+              <motion.div
+                animate={{ rotate: isSubjectsExpanded ? 0 : -180 }}
+                transition={{ duration: 0.3 }}
+              >
+                <ChevronDown className="w-3.5 h-3.5" />
+              </motion.div>
+            </div>
           </div>
+          
+          <AnimatePresence initial={false}>
+            {isSubjectsExpanded && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: "auto", opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.3, ease: [0.23, 1, 0.32, 1] }}
+                className="overflow-hidden"
+              >
+                <div className="flex flex-col gap-1">
+                  {subjects.map((subject, i) => {
+                    const color = subject.color || SUBJECT_COLORS[i % SUBJECT_COLORS.length]
+                    const isActive = pathname.includes(`/subjects/${subject._id}`)
+                    return (
+                      <Link 
+                        key={subject._id}
+                        href={`/subjects/${subject._id}`}
+                        className={cn(
+                          "flex flex-col gap-1.5 px-3 py-2 rounded-lg text-sm transition-colors group",
+                          isActive ? "bg-sidebar-accent text-sidebar-accent-foreground" : "text-muted-foreground hover:bg-sidebar-accent/50 hover:text-foreground"
+                        )}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="w-6 h-6 rounded-md flex items-center justify-center shrink-0 transition-transform group-hover:scale-110" style={{ background: `${color}15`, border: `1px solid ${color}30` }}>
+                            <BookOpen className="w-3.5 h-3.5" style={{ color }} />
+                          </div>
+                          <span className="truncate flex-1">{subject.title}</span>
+                        </div>
+                      </Link>
+                    )
+                  })}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </div>
 
@@ -112,19 +123,9 @@ export function AppSidebar() {
               <span className="text-xs text-muted-foreground uppercase tracking-wide flex items-center gap-1"><Flame className="w-3 h-3 text-gold" /> Streak</span>
               <span className="font-serif text-2xl text-gold pt-1">{streak} <span className="text-xs text-muted-foreground font-sans">Days</span></span>
             </div>
-            <ArrowRight className="w-4 h-4 text-gold/50 cursor-pointer hover:text-gold transition-colors" />
           </div>
         </div>
 
-        <div className="pt-2">
-          <button 
-            onClick={handleLogout} 
-            className="flex items-center justify-between px-3 py-2 w-full rounded-lg text-sm font-medium text-muted-foreground hover:text-white transition-colors group"
-          >
-            <span className="transition-colors">Logout</span>
-            <ArrowRight className="w-4 h-4 transition-colors group-hover:text-white" />
-          </button>
-        </div>
       </div>
     </aside>
   )

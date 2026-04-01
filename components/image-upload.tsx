@@ -6,7 +6,7 @@ import { uploadImage } from '@/services/api'
 import { toast } from 'sonner'
 import Image from 'next/image'
 
-export function ImageUpload({ topicId, onExtracted }: { topicId: string, onExtracted: (text: string) => void }) {
+export function ImageUpload({ topicId, onExtracted }: { topicId: string, onExtracted: (text: string, updatedTopic?: any) => void }) {
   const [isDragging, setIsDragging] = useState(false)
   const [isUploading, setIsUploading] = useState(false)
   const [preview, setPreview] = useState<string | null>(null)
@@ -44,10 +44,14 @@ export function ImageUpload({ topicId, onExtracted }: { topicId: string, onExtra
       const res = await uploadImage(topicId, file)
       toast.success('Image processed via AI')
       if (res.extractedText) {
-        onExtracted(res.extractedText)
+        onExtracted(res.extractedText, (res as any).data)
       }
     } catch (err: any) {
-      toast.error(err.message || 'Failed to process image')
+      if (err.code === 'AI_RATE_LIMITED' || err.status === 429) {
+        toast.warning('The AI is currently busy. Please wait a moment and try again.', { icon: '⏳' })
+      } else {
+        toast.error(err.message || 'Failed to process image')
+      }
       setPreview(null)
     } finally {
       setIsUploading(false)
@@ -56,7 +60,7 @@ export function ImageUpload({ topicId, onExtracted }: { topicId: string, onExtra
 
   return (
     <div 
-      className={`relative border-2 border-dashed rounded-xl p-8 text-center transition-all cursor-pointer ${
+      className={`relative border-2 border-dashed rounded-xl p-8 min-h-[220px] flex flex-col items-center justify-center text-center transition-all cursor-pointer ${
         isDragging ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50 hover:bg-card/50'
       }`}
       onDragEnter={() => setIsDragging(true)}
@@ -96,10 +100,10 @@ export function ImageUpload({ topicId, onExtracted }: { topicId: string, onExtra
         ) : (
           <>
             <div className="bg-primary/10 border border-primary/20 p-4 rounded-full group-hover:scale-110 transition-transform">
-              <ImageIcon className="w-8 h-8 text-primary" />
+              <ImageIcon className="w-6 h-6 text-primary" />
             </div>
-            <p className="font-serif text-lg text-foreground">Upload a textbook page</p>
-            <p className="text-sm text-muted-foreground">Snap a picture of your notes to instantly convert to text.</p>
+            <p className="text-sm font-semibold text-foreground">Upload a textbook page</p>
+            <p className="text-xs text-muted-foreground mt-1 px-2">Snap a picture of your notes to instantly convert to text.</p>
           </>
         )}
       </div>

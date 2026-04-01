@@ -1,6 +1,5 @@
 import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import { generateText, generateObject } from "ai";
-import { z, ZodType } from "zod";
 import { FlashcardOutputSchema, FlashcardOutput } from "../schemas/flashcard.schema";
 import { QuizOutputSchema, QuizOutput } from "../schemas/quiz.schema";
 
@@ -8,146 +7,144 @@ const openrouter = createOpenRouter({
   apiKey: process.env.OPENROUTER_API_KEY,
 });
 
-const PRIMARY_MODEL = process.env.OPENROUTER_PRIMARY_MODEL || "google/gemma-3-27b-it:free";
-const FALLBACK_MODEL = process.env.OPENROUTER_FALLBACK_MODEL || "openrouter/free";
+// Primary model or a chain of free alternatives
+const MODELS = [
+  'google/gemma-3-27b-it:free',
+  'google/gemma-3-12b-it:free',
+  'mistralai/mistral-small-3.1-24b-instruct:free',
+  process.env.OPENROUTER_FALLBACK_MODEL || 'openrouter/auto',
+]
 
-function getModel(useFallback = false) {
-  const modelId = useFallback ? FALLBACK_MODEL : PRIMARY_MODEL;
-  return openrouter(modelId);
-}
+const VISION_MODELS = [
+  'google/gemma-3-27b-it:free',
+  'google/gemma-3-12b-it:free',
+  'qwen/qwen2.5-vl-72b-instruct:free',
+  process.env.OPENROUTER_FALLBACK_MODEL || 'openrouter/auto',
+]
 
-function extractJSON<T>(text: string, schema: ZodType<T>): T {
-  try {
-    // Try to find JSON in markdown blocks first
-    const match = text.match(/```json\n([\s\S]*?)\n```/) || text.match(/```([\s\S]*?)```/);
-    const jsonStr = match ? match[1] : text;
-    
-    // Clean up potential leading/trailing garbage
-    const start = jsonStr.indexOf("{");
-    const end = jsonStr.lastIndexOf("}");
-    if (start === -1 || end === -1) throw new Error("No JSON object found in response");
-    
-    const cleaned = jsonStr.substring(start, end + 1);
-    const parsed = JSON.parse(cleaned);
-    return schema.parse(parsed);
-  } catch (error: any) {
-    console.error("JSON Extraction Error:", error.message);
-    console.error("Raw text was:", text);
-    throw new Error(`Failed to parse AI response as valid JSON: ${error.message}`);
+/**
+ * Reusable wrapper that tries a list of models sequentially in case of failures.
+ * Now catches not just rate limits (429), but also parsing/validation errors (500)
+ * to ensure maximum reliability with free models.
+ */
+async function withFallback<T>(
+  models: string[],
+  fn: (modelId: string) => Promise<T>
+): Promise<T> {
+  let lastError: any;
+
+  for (const modelId of models) {
+    try {
+      console.log(`Trying model: ${modelId}`);
+      const result = await fn(modelId);
+      return result;
+    } catch (error: any) {
+      lastError = error;
+
+      // Log the error detail for debugging
+      console.error(`Error with model ${modelId}:`, error.message || error);
+
+      const isRecoverable =
+        error?.statusCode === 429 ||
+        error?.status === 429 ||
+        error?.message?.includes('429') ||
+        error?.message?.includes('rate') ||
+        error?.message?.includes('rate-limited') ||
+        error?.message?.includes('Failed to process successful response') || // Catch Vercel AI SDK parsing errors
+        error?.name === 'AI_ObjectGenerationError' ||
+        error?.reason === 'maxRetriesExceeded' ||
+        error?.message?.includes('timeout') ||
+        error?.message?.includes('ETIMEDOUT');
+
+      if (isRecoverable) {
+        console.warn(`Model ${modelId} failed with a recoverable error. Trying next model...`);
+        continue;
+      }
+
+      // Not a recoverable error (e.g. auth issue, invalid input) — throw immediately
+      throw error;
+    }
   }
+
+  // All models exhausted
+  console.error('All models exhausted. Last error:', lastError?.message || lastError);
+  throw new Error(
+    `AI Generation failed after trying all fallback models. Last error: ${lastError?.message || 'Unknown error'}`
+  );
 }
 
+// generateSummary
 export async function generateSummary(notes: string): Promise<string> {
-  try {
+  return withFallback(MODELS, async (modelId) => {
     const { text } = await generateText({
-      model: getModel(),
+      model: openrouter(modelId),
       prompt: `You are an expert tutor. Summarize the following study notes 
 in a clear, structured format with key concepts highlighted.
 
 Notes:
 ${notes}`,
     });
-
     return text;
-  } catch (error: any) {
-    if (error.statusCode === 429) {
-      const { text } = await generateText({
-        model: getModel(true),
-        prompt: `Summarize these study notes clearly and concisely:\n\n${notes}`,
-      });
-      return text;
-    }
-    throw error;
-  }
+  });
 }
 
-export async function generateFlashcards(notes: string, count = 10): Promise<FlashcardOutput["flashcards"]> {
+// generateFlashcards
+export async function generateFlashcards(
+  notes: string,
+  count = 10
+): Promise<FlashcardOutput['flashcards']> {
   console.log(`Generating ${count} flashcards`);
-  const prompt = `You are an expert tutor. Generate exactly ${count} flashcards 
+  return withFallback(MODELS, async (modelId) => {
+    const { object } = await generateObject({
+      model: openrouter(modelId),
+      schema: FlashcardOutputSchema,
+      prompt: `You are an expert tutor. Generate exactly ${count} flashcards 
 from these study notes. Each flashcard should test one specific concept.
 
 Notes:
-${notes}
-
-Respond ONLY with a JSON object in this format:
-{
-  "flashcards": [
-    { "question": "...", "answer": "..." }
-  ]
-}`;
-
-  try {
-    const { text } = await generateText({
-      model: getModel(),
-      prompt,
+${notes}`,
     });
-
-    return extractJSON(text, FlashcardOutputSchema).flashcards;
-  } catch (error: any) {
-    if (error.statusCode === 429) {
-      const { text } = await generateText({
-        model: getModel(true),
-        prompt,
-      });
-      return extractJSON(text, FlashcardOutputSchema).flashcards;
-    }
-    console.error("Flashcard generation error:", error.message);
-    throw error;
-  }
+    return object.flashcards;
+  });
 }
 
-export async function generateQuiz(notes: string, count = 5): Promise<QuizOutput["questions"]> {
-  const prompt = `You are an expert tutor. Generate exactly ${count} multiple-choice 
+// generateQuiz
+export async function generateQuiz(
+  notes: string,
+  count = 5
+): Promise<QuizOutput['questions']> {
+  return withFallback(MODELS, async (modelId) => {
+    const { object } = await generateObject({
+      model: openrouter(modelId),
+      schema: QuizOutputSchema,
+      prompt: `You are an expert tutor. Generate exactly ${count} multiple-choice 
 questions from these study notes. Make the wrong options plausible but 
 clearly incorrect to someone who studied the material.
 
 Notes:
-${notes}
-
-Respond ONLY with a JSON object matching this schema:
-{
-  "questions": [
-    {
-      "question": "...",
-      "options": ["...", "...", "...", "..."],
-      "correctIndex": 0,
-      "explanation": "..."
-    }
-  ]
-}`;
-
-  try {
-    const { text } = await generateText({
-      model: getModel(),
-      prompt,
+${notes}`,
     });
-
-    return extractJSON(text, QuizOutputSchema).questions;
-  } catch (error: any) {
-    if (error.statusCode === 429) {
-      const { text } = await generateText({
-        model: getModel(true),
-        prompt,
-      });
-      return extractJSON(text, QuizOutputSchema).questions;
-    }
-    throw error;
-  }
+    return object.questions;
+  });
 }
 
-export async function extractTextFromImage(imageBuffer: Uint8Array, mimeType: string): Promise<string> {
-  try {
-    const base64Image = Buffer.from(imageBuffer).toString("base64");
-    const imageUri = `data:${mimeType};base64,${base64Image}`;
+// extractTextFromImage
+export async function extractTextFromImage(
+  imageBuffer: Uint8Array,
+  mimeType: string
+): Promise<string> {
+  const base64Image = Buffer.from(imageBuffer).toString('base64');
+  const imageUri = `data:${mimeType};base64,${base64Image}`;
 
+  return withFallback(VISION_MODELS, async (modelId) => {
     const { text } = await generateText({
-      model: getModel(),
+      model: openrouter(modelId),
       messages: [
         {
-          role: "user",
+          role: 'user',
           content: [
             {
-              type: "text",
+              type: 'text',
               text: `You are a precise text extraction assistant. Look at this image and:
 1. Extract ALL text content you can see, including handwritten text.
 2. Organize it logically (preserve headings, bullet points, numbered lists).
@@ -157,178 +154,146 @@ export async function extractTextFromImage(imageBuffer: Uint8Array, mimeType: st
 Respond with ONLY the extracted and organized text. No commentary.`,
             },
             {
-              type: "image",
+              type: 'image',
               image: imageUri,
             },
           ],
         },
       ],
     });
-
     return text;
-  } catch (error: any) {
-    if (error.statusCode === 429) {
-      const base64Image = Buffer.from(imageBuffer).toString("base64");
-      const imageUri = `data:${mimeType};base64,${base64Image}`;
-      
-      const { text } = await generateText({
-        model: getModel(true),
-        messages: [
-          {
-            role: "user",
-            content: [
-              { type: "text", text: "Extract all text from this image:" },
-              { type: "image", image: imageUri },
-            ],
-          },
-        ],
-      });
-      return text;
-    }
-    throw error;
-  }
+  });
 }
 
+// extractTextFromImageUrl
 export async function extractTextFromImageUrl(imageUrl: string): Promise<string> {
-  try {
+  return withFallback(VISION_MODELS, async (modelId) => {
     const { text } = await generateText({
-      model: getModel(),
+      model: openrouter(modelId),
       messages: [
         {
-          role: "user",
+          role: 'user',
           content: [
             {
-              type: "text",
-              text: "Extract all text from this image. Organize logically.",
+              type: 'text',
+              text: 'Extract all text from this image. Organize logically.',
             },
             {
-              type: "image",
+              type: 'image',
               image: new URL(imageUrl),
             },
           ],
         },
       ],
     });
-
     return text;
-  } catch (error: any) {
-    if (error.statusCode === 429) {
-      const { text } = await generateText({
-        model: getModel(true),
-        messages: [
-          {
-            role: "user",
-            content: [
-              { type: "text", text: "Extract all text from this image:" },
-              { type: "image", image: new URL(imageUrl) },
-            ],
-          },
-        ],
-      });
-      return text;
-    }
-    console.error("Image URL text extraction error:", error.message);
-    throw error;
-  }
+  });
 }
 
-export async function generateFlashcardsFromImage(imageBuffer: Uint8Array, mimeType: string, count = 10): Promise<FlashcardOutput["flashcards"]> {
-  const base64Image = Buffer.from(imageBuffer).toString("base64");
+// generateFlashcardsFromImage
+export async function generateFlashcardsFromImage(
+  imageBuffer: Uint8Array,
+  mimeType: string,
+  count = 10
+): Promise<FlashcardOutput['flashcards']> {
+  const base64Image = Buffer.from(imageBuffer).toString('base64');
   const imageUri = `data:${mimeType};base64,${base64Image}`;
-
   console.log(`Generating ${count} flashcards from image (${mimeType})`);
-  const messages: any[] = [
-    {
-      role: "user",
-      content: [
-        {
-          type: "text",
-          text: `You are an expert tutor. Look at this image of study material 
-and generate exactly ${count} flashcards based on the content you see. 
-Each flashcard should test one specific concept from the image.
 
-Respond ONLY with a JSON object in this format:
-{
-  "flashcards": [
-    { "question": "...", "answer": "..." }
-  ]
-}`,
-        },
+  return withFallback(VISION_MODELS, async (modelId) => {
+    const { object } = await generateObject({
+      model: openrouter(modelId),
+      schema: FlashcardOutputSchema,
+      messages: [
         {
-          type: "image",
-          image: imageUri,
+          role: 'user',
+          content: [
+            {
+              type: 'text',
+              text: `You are an expert tutor. Look at this image of study material 
+and generate exactly ${count} flashcards based on the content you see. 
+Each flashcard should test one specific concept from the image.`,
+            },
+            {
+              type: 'image',
+              image: imageUri,
+            },
+          ],
         },
       ],
-    },
-  ];
-
-  try {
-    const { text } = await generateText({
-      model: getModel(),
-      messages,
     });
-
-    return extractJSON(text, FlashcardOutputSchema).flashcards;
-  } catch (error: any) {
-    if (error.statusCode === 429) {
-      const { text } = await generateText({
-        model: getModel(true),
-        messages,
-      });
-      return extractJSON(text, FlashcardOutputSchema).flashcards;
-    }
-    throw error;
-  }
+    return object.flashcards;
+  });
 }
 
-export async function generateQuizFromImage(imageBuffer: Uint8Array, mimeType: string, count = 5): Promise<QuizOutput["questions"]> {
-  const base64Image = Buffer.from(imageBuffer).toString("base64");
+// generateQuizFromImage
+export async function generateQuizFromImage(
+  imageBuffer: Uint8Array,
+  mimeType: string,
+  count = 5
+): Promise<QuizOutput['questions']> {
+  const base64Image = Buffer.from(imageBuffer).toString('base64');
   const imageUri = `data:${mimeType};base64,${base64Image}`;
 
-  const messages: any[] = [
-    {
-      role: "user",
-      content: [
+  return withFallback(VISION_MODELS, async (modelId) => {
+    const { object } = await generateObject({
+      model: openrouter(modelId),
+      schema: QuizOutputSchema,
+      messages: [
         {
-          type: "text",
-          text: `Look at this image of study material and generate exactly ${count} 
-multiple-choice questions based on what you see.
-
-Respond ONLY with a JSON object in this format:
-{
-  "questions": [
-    {
-      "question": "...",
-      "options": ["...", "...", "...", "..."],
-      "correctIndex": 0,
-      "explanation": "..."
-    }
-  ]
-}`,
-        },
-        {
-          type: "image",
-          image: imageUri,
+          role: 'user',
+          content: [
+            {
+              type: 'text',
+              text: `Look at this image of study material and generate exactly ${count} 
+multiple-choice questions based on what you see.`,
+            },
+            {
+              type: 'image',
+              image: imageUri,
+            },
+          ],
         },
       ],
-    },
-  ];
-
-  try {
-    const { text } = await generateText({
-      model: getModel(),
-      messages,
     });
+    return object.questions;
+  });
+}
 
-    return extractJSON(text, QuizOutputSchema).questions;
-  } catch (error: any) {
-    if (error.statusCode === 429) {
-      const { text } = await generateText({
-        model: getModel(true),
-        messages,
-      });
-      return extractJSON(text, QuizOutputSchema).questions;
-    }
-    throw error;
-  }
+// explainDiagram
+export async function explainDiagram(
+  imageBuffer: Uint8Array,
+  mimeType: string
+): Promise<string> {
+  const base64Image = Buffer.from(imageBuffer).toString('base64');
+  const imageUri = `data:${mimeType};base64,${base64Image}`;
+
+  return withFallback(VISION_MODELS, async (modelId) => {
+    const { text } = await generateText({
+      model: openrouter(modelId),
+      messages: [
+        {
+          role: 'user',
+          content: [
+            {
+              type: 'text',
+              text: `You are an expert educator. Look at this diagram, chart, or 
+image and provide a clear step-by-step explanation of:
+1. What the diagram shows overall
+2. Each key component or element
+3. How the parts relate to each other
+4. What concept or process it is illustrating
+
+Write in clear, simple language a student would understand.`,
+            },
+            {
+              type: 'image',
+              image: imageUri,
+            },
+          ],
+        },
+      ],
+    });
+    return text;
+  });
 }

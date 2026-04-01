@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import connectDB from "../../../lib/db";
 import Subject from "../../../models/Subject";
+import Topic from "../../../models/Topic";
 import { withAuth, AuthenticatedRequest } from "../../../lib/middleware";
 
 async function getSubjects(req: AuthenticatedRequest) {
@@ -8,7 +9,18 @@ async function getSubjects(req: AuthenticatedRequest) {
     await connectDB();
     const userId = req.user.id;
     const subjects = await Subject.find({ userId }).sort({ createdAt: -1 });
-    return NextResponse.json({ success: true, data: subjects });
+    
+    const subjectsWithCounts = await Promise.all(
+      subjects.map(async (subject) => {
+        const topicCount = await Topic.countDocuments({ subjectId: subject._id });
+        return {
+          ...subject.toObject(),
+          topicCount
+        };
+      })
+    );
+
+    return NextResponse.json({ success: true, data: subjectsWithCounts });
   } catch (error: any) {
     console.error("Get Subjects Error:", error);
     return NextResponse.json(

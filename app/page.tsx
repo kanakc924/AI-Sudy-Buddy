@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
 import { Button } from '@/components/ui/button'
-import { BookOpen, ArrowRight, Brain, Zap, Target, FileText, TrendingUp, Sparkles } from 'lucide-react'
+import { BookOpen, ArrowRight, Brain, Zap, Target, FileText, TrendingUp, Sparkles, Flame } from 'lucide-react'
 import { ThemeToggle } from '@/components/theme-toggle'
 
 export default function LandingPage() {
@@ -24,7 +24,7 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="bg-primary/20 rounded-lg p-2">
-              <BookOpen className="w-5 h-5 text-primary" />
+              <Brain className="w-5 h-5 text-primary" />
             </div>
             <span className="font-serif text-xl font-medium tracking-wide">Study Buddy</span>
           </div>
@@ -50,15 +50,15 @@ export default function LandingPage() {
               transition={{ duration: 0.6 }}
               className="flex flex-col gap-6"
             >
-              <h1 className="font-serif text-5xl lg:text-6xl tracking-tight leading-tight">
-                Study smarter, <span className="text-primary italic">not harder</span>
+              <h1 className="font-serif text-5xl lg:text-6xl tracking-tight leading-tight text-white font-bold">
+                The study partner that never sleeps.
               </h1>
               <p className="text-xl text-muted-foreground max-w-lg leading-relaxed">
-                Transform your notes into AI-powered flashcards, quizzes, and summaries. Master any subject.
+                Track your streaks, analyze your weak spots, and level up your learning with a companion that understands your notes.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 pt-4">
                 <Link href="/register" className="w-full sm:w-auto">
-                  <Button size="lg" className="w-full sm:w-auto bg-primary hover:bg-primary/90 text-primary-foreground h-14 text-lg rounded-xl">
+                  <Button size="lg" className="w-full sm:w-auto bg-[#8F8DF2] hover:bg-[#8F8DF2]/90 text-white h-14 text-lg rounded-full px-8">
                     Get Started Free <ArrowRight className="w-5 h-5 ml-2" />
                   </Button>
                 </Link>
@@ -69,37 +69,50 @@ export default function LandingPage() {
                 </Link>
               </div>
               
-              <div className="h-px w-full bg-border/50 my-6"></div>
-              
-              <div className="flex flex-wrap gap-x-8 gap-y-4 text-sm font-medium">
-                <div className="flex flex-col">
-                  <span className="text-foreground text-lg">10k+</span>
-                  <span className="text-muted-foreground">Active Students</span>
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-foreground text-lg">500k+</span>
-                  <span className="text-muted-foreground">Flashcards Created</span>
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-gold text-lg">92%</span>
-                  <span className="text-muted-foreground">Improvement Rate</span>
-                </div>
-              </div>
+
             </motion.div>
 
             <div className="relative h-[400px] sm:h-[500px] flex items-center justify-center perspective-1000">
               <motion.div
-                animate={{ y: [0, -10, 0], rotateY: [0, 5, 0, -5, 0] }}
+                animate={{ y: [0, -10, 0] }}
                 transition={{ repeat: Infinity, duration: 6, ease: "easeInOut" }}
-                className="w-full max-w-sm glass-card rounded-2xl p-8 flex flex-col justify-between aspect-4/3 border-primary/20 shadow-2xl shadow-primary/10"
+                className="w-full max-w-md bg-[#252833] rounded-2xl p-6 flex flex-col gap-6 border border-border/50 shadow-2xl shadow-primary/10"
               >
-                <p className="text-xs uppercase tracking-wider text-muted-foreground">Sample Question</p>
-                <p className="font-serif text-3xl text-foreground text-center leading-relaxed">
-                  What is the powerhouse of the cell?
-                </p>
-                <div className="flex items-center justify-center gap-2 pt-4 border-t border-border/50">
-                  <Sparkles className="w-4 h-4 text-primary" />
-                  <span className="text-sm text-primary font-medium">Tap to reveal answer</span>
+                {/* Streak Component */}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-gold/10 flex items-center justify-center">
+                      <Flame className="w-5 h-5 text-gold animate-pulse" />
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground font-semibold uppercase tracking-wider">Current Streak</p>
+                      <p className="text-xl font-bold text-white">7 Days</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Heatmap Mockup */}
+                <div className="space-y-3">
+                  <p className="text-sm font-semibold text-white">Study Activity</p>
+                  <div className="grid grid-cols-7 gap-1.5">
+                    {Array.from({ length: 28 }).map((_, i) => {
+                      const intensities = ['bg-[#323645]', 'bg-[#8F8DF2]/30', 'bg-[#8F8DF2]/60', 'bg-[#8F8DF2]', 'bg-[#C4F2E8]/60', 'bg-[#C4F2E8]'];
+                      // Predictable pattern instead of pure random for consistent visual
+                      const pattern = [0, 0, 1, 3, 2, 0, 0, 0, 2, 4, 3, 5, 1, 0, 0, 1, 2, 3, 4, 5, 3, 0, 0, 0, 1, 0, 0, 0];
+                      const intensity = intensities[pattern[i % pattern.length]];
+                      return (
+                        <div key={i} className={`w-full aspect-square rounded-sm ${i > 24 ? 'bg-[#323645]' : intensity}`}></div>
+                      )
+                    })}
+                  </div>
+                </div>
+
+                {/* Insight Badge */}
+                <div className="bg-[#8F8DF2]/10 border border-[#8F8DF2]/20 rounded-xl p-4 flex gap-3 items-start mt-2">
+                  <Sparkles className="w-5 h-5 text-[#8F8DF2] shrink-0 mt-0.5" />
+                  <p className="text-sm text-white/90 leading-relaxed">
+                    <span className="font-semibold text-white">Insight:</span> You're struggling with <span className="italic">'Integrals'</span>. Generate a quick quiz?
+                  </p>
                 </div>
               </motion.div>
             </div>
@@ -182,7 +195,6 @@ export default function LandingPage() {
       </main>
 
       <footer className="border-t border-border/50 py-8 text-center text-sm text-muted-foreground">
-        <p>Built with Next.js and AI. Study smarter.</p>
       </footer>
     </div>
   )

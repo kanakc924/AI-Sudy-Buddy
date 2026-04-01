@@ -8,8 +8,20 @@ const apiFetch = async (path: string, options?: RequestInit) => {
       ...options?.headers,
     },
   })
-  if (!res.ok) throw await res.json()
-  return res.json()
+
+  // Attempt to parse JSON regardless of status to catch structured errors
+  const json = await res.json().catch(() => ({}));
+
+  if (!res.ok) {
+    // Throw structured error so catch blocks get code + error fields
+    const err = new Error(json?.error || 'Request failed') as any
+    err.status = res.status
+    err.code = json?.code || 'UNKNOWN_ERROR'
+    err.error = json?.error
+    throw err
+  }
+
+  return json
 }
 
 // Auth
@@ -42,6 +54,9 @@ export const deleteTopic = (id: string) =>
 export const updateNotes = (topicId: string, notes: string) =>
   apiFetch(`/topics/${topicId}/notes`, { method: 'PUT', body: JSON.stringify({ notes }) })
 
+export const deleteSourceMaterial = (topicId: string, materialId: string) =>
+  apiFetch(`/topics/${topicId}/materials?materialId=${materialId}`, { method: 'DELETE' })
+
 export const uploadFile = async (topicId: string, file: File): Promise<{ extractedText: string }> => {
   const token = localStorage.getItem('study_buddy_token')
   const formData = new FormData()
@@ -54,15 +69,44 @@ export const uploadFile = async (topicId: string, file: File): Promise<{ extract
     body: formData,
   })
 
+  const json = await res.json().catch(() => ({}))
+
   if (!res.ok) {
-    const err = await res.json()
-    throw new Error(err?.error || err?.message || 'Upload failed')
+    const err = new Error(json?.error || 'Upload failed') as any
+    err.status = res.status
+    err.code = json?.code || 'UPLOAD_ERROR'
+    err.error = json?.error
+    throw err
   }
 
-  return res.json()
+  return json
 }
 
-export const uploadImage = async (topicId: string, file: File): Promise<{ extractedText: string }> => {
+export const uploadDocument = async (topicId: string, file: File): Promise<{ extractedText: string, data?: any }> => {
+  const token = localStorage.getItem('study_buddy_token')
+  const formData = new FormData()
+  formData.append('file', file)
+
+  const res = await fetch(`/api/topics/${topicId}/upload`, {
+    method: 'POST',
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    body: formData,
+  })
+
+  const json = await res.json().catch(() => ({}))
+
+  if (!res.ok) {
+    const err = new Error(json?.error || 'Upload failed') as any
+    err.status = res.status
+    err.code = json?.code || 'UPLOAD_ERROR'
+    err.error = json?.error
+    throw err
+  }
+
+  return json
+}
+
+export const uploadImage = async (topicId: string, file: File): Promise<{ extractedText: string, data?: any }> => {
   const token = localStorage.getItem('study_buddy_token')
   const formData = new FormData()
   formData.append('file', file)
@@ -73,12 +117,17 @@ export const uploadImage = async (topicId: string, file: File): Promise<{ extrac
     body: formData,
   })
 
+  const json = await res.json().catch(() => ({}))
+
   if (!res.ok) {
-    const err = await res.json()
-    throw new Error(err?.error || err?.message || 'Upload failed')
+    const err = new Error(json?.error || 'Upload failed') as any
+    err.status = res.status
+    err.code = json?.code || 'UPLOAD_ERROR'
+    err.error = json?.error
+    throw err
   }
 
-  return res.json()
+  return json
 }
 
 // AI Generation
@@ -100,8 +149,17 @@ export const generateFromImage = async (topicId: string, type: 'flashcard' | 'qu
     headers: token ? { Authorization: `Bearer ${token}` } : {},
     body: form,
   })
-  if (!res.ok) throw await res.json()
-  return res.json()
+  
+  const json = await res.json().catch(() => ({}))
+
+  if (!res.ok) {
+    const err = new Error(json?.error || 'Generation failed') as any
+    err.status = res.status
+    err.code = json?.code || 'GENERATION_ERROR'
+    err.error = json?.error
+    throw err
+  }
+  return json
 }
 
 // Flashcards & Quizzes
@@ -121,14 +179,17 @@ export const deleteQuiz = (id: string) =>
 // Sessions & Progress
 export const logSession = (data: object) =>
   apiFetch('/sessions', { method: 'POST', body: JSON.stringify(data) })
-export const getProgress = () => apiFetch('/progress')
+export const getStats = () => apiFetch('/sessions/stats')
+export const getStreak = () => apiFetch('/sessions/streak')
+export const getHeatmap = (topicId?: string) => 
+  apiFetch(topicId ? `/sessions/heatmap?topicId=${topicId}` : '/sessions/heatmap')
 
 
 // Explain Diagram
 export const explainDiagram = async (
   topicId: string,
   file: File
-): Promise<{ explanation: string; imageUrl: string }> => {
+): Promise<{ extractedText: string; imageUrl: string }> => {
   const token = localStorage.getItem('study_buddy_token')
   const formData = new FormData()
   formData.append('image', file)
@@ -139,10 +200,15 @@ export const explainDiagram = async (
     body: formData,
   })
 
+  const json = await res.json().catch(() => ({}))
+
   if (!res.ok) {
-    const err = await res.json()
-    throw new Error(err?.error || 'Failed to explain diagram')
+    const err = new Error(json?.error || 'Failed to explain diagram') as any
+    err.status = res.status
+    err.code = json?.code || 'DIAGRAM_ERROR'
+    err.error = json?.error
+    throw err
   }
 
-  return res.json()
+  return json
 }

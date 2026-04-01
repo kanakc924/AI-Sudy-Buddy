@@ -2,16 +2,16 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { motion } from 'framer-motion'
-import { BookOpen, Brain, Target, Flame, AlertTriangle, ArrowRight, Search, User as UserIcon, Image as ImageIcon, Sparkles } from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { BookOpen, Brain, Target, Flame, AlertTriangle, ArrowRight, User as UserIcon, Image as ImageIcon, Sparkles, ChevronDown, ChevronUp } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
-import { getProgress } from '@/services/api'
+import { getStats, getStreak, getHeatmap } from '@/services/api'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Progress } from '@/components/ui/progress'
 import { AreaChart, Area, XAxis, YAxis, Tooltip as RechartsTooltip, ResponsiveContainer } from 'recharts'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
+
 import { LoadingSkeleton } from '@/components/loading-skeleton'
 import Link from 'next/link'
 
@@ -20,11 +20,20 @@ export default function DashboardPage() {
   const { user } = useAuth()
   const [data, setData] = useState<any>(null)
   const [loading, setLoading] = useState(true)
+  const [isMounted, setIsMounted] = useState(false)
+  const [isSubjectsExpanded, setIsSubjectsExpanded] = useState(true)
 
   useEffect(() => {
-    getProgress()
-      .then(res => setData(res.data))
-      .catch((e) => console.error("Error fetching progress", e))
+    setIsMounted(true)
+    Promise.all([getStats(), getStreak(), getHeatmap()])
+      .then(([statsRes, streakRes, heatmapRes]) => {
+        setData({
+          ...statsRes.data,
+          currentStreak: streakRes.data?.currentStreak || 0,
+          activityHeatmap: heatmapRes.data || []
+        })
+      })
+      .catch((e) => console.error("Error fetching dashboard data", e))
       .finally(() => setLoading(false))
   }, [])
 
@@ -61,13 +70,12 @@ export default function DashboardPage() {
   ]
 
   // Generate 12 weeks * 7 days heatmap mock if missing
-  const heatmapData = data?.activityHeatmap ? Object.keys(data.activityHeatmap).map(date => ({
-    date,
-    count: data.activityHeatmap[date]
-  })) : Array.from({ length: 12 * 7 }).map((_, i) => ({
-    date: `Day ${i}`,
-    count: 0
-  }))
+  const heatmapData = Array.isArray(data?.activityHeatmap) && data.activityHeatmap.length > 0 
+    ? data.activityHeatmap 
+    : Array.from({ length: 12 * 7 }).map((_, i) => ({
+        date: `Day ${i}`,
+        count: 0
+      }))
   
   const getHeatmapColor = (count: number) => {
     if (count === 0) return 'bg-card'
@@ -77,7 +85,7 @@ export default function DashboardPage() {
     return 'bg-primary'
   }
 
-  const aiUsage = data?.aiUsage || { count: 180, max: 200 }
+  const aiUsage = data?.aiUsage || { count: 0, max: 200 }
   const usagePercent = Math.min(100, (aiUsage.count / aiUsage.max) * 100)
   const isUsageHigh = usagePercent >= 80
 
@@ -98,16 +106,7 @@ export default function DashboardPage() {
             </div>
           </div>
         </div>
-        <div className="flex items-center gap-3">
-          <div className="relative hidden md:block">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input placeholder="Search materials..." className="w-64 h-10 pl-9 bg-card border-border rounded-xl focus-visible:ring-primary/30" />
-          </div>
-          <Button variant="outline" size="icon" className="rounded-xl border-border bg-card">
-            <Search className="w-5 h-5 md:hidden" />
-            <UserIcon className="w-5 h-5 hidden md:block" />
-          </Button>
-        </div>
+
       </div>
 
       {/* Core UI Block: Goal Card */}
@@ -128,19 +127,6 @@ export default function DashboardPage() {
                 ? " Great job on hitting your rhythm!" 
                 : " Try to complete a few more to reach your peak performance."}
             </p>
-            <div className="flex flex-wrap gap-3 pt-2">
-              <Button onClick={() => router.push('/generate')} className="bg-primary hover:bg-primary/90 text-white rounded-2xl h-12 px-6 shadow-lg shadow-primary/20">
-                <ImageIcon className="w-4 h-4 mr-2" />
-                Generate from Image
-              </Button>
-              <div className="flex -space-x-2">
-                {[1, 2, 3].map(i => (
-                  <div key={i} className="w-10 h-10 rounded-full border-2 border-background bg-card flex items-center justify-center overflow-hidden">
-                    <UserIcon className="w-5 h-5 text-muted-foreground" />
-                  </div>
-                ))}
-              </div>
-            </div>
           </div>
           <Card className="glass-card border-white/10 shrink-0 w-full md:w-64">
             <CardContent className="p-6 space-y-4">
@@ -193,14 +179,18 @@ export default function DashboardPage() {
               <div className="overflow-x-auto scrollbar-hide">
                 <div className="min-w-[600px]">
                   <TooltipProvider delayDuration={0}>
-                    <div className="flex gap-2 items-start">
-                      <div className="flex flex-col justify-between h-[116px] text-[10px] uppercase tracking-tighter text-muted-foreground pr-2 pt-2 font-bold">
-                        <span>Mon</span>
-                        <span>Wed</span>
-                        <span>Fri</span>
+                    <div className="flex gap-3 items-start">
+                      <div className="grid grid-rows-7 gap-3.5 text-[9px] uppercase tracking-wider text-muted-foreground pr-2 font-bold pt-0.5">
+                        <span className="h-3.5 flex items-center">Mon</span>
+                        <span className="h-3.5 flex items-center">Tue</span>
+                        <span className="h-3.5 flex items-center">Wed</span>
+                        <span className="h-3.5 flex items-center">Thu</span>
+                        <span className="h-3.5 flex items-center">Fri</span>
+                        <span className="h-3.5 flex items-center">Sat</span>
+                        <span className="h-3.5 flex items-center">Sun</span>
                       </div>
-                      <div className="grid grid-flow-col grid-rows-7 gap-1.5 flex-1">
-                        {heatmapData.map((day, i) => (
+                      <div className="grid grid-flow-col grid-rows-7 gap-3.5 flex-1">
+                        {heatmapData.map((day: { date: string; count: number }, i: number) => (
                           <Tooltip key={i}>
                             <TooltipTrigger>
                               <div className={`w-3.5 h-3.5 rounded-[3px] ${getHeatmapColor(day.count)} border border-border/10 hover:ring-2 hover:ring-primary/30 transition-all`} />
@@ -236,46 +226,50 @@ export default function DashboardPage() {
               </CardTitle>
             </CardHeader>
             <CardContent className="p-6 h-[280px] w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={scoreTrend} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                  <defs>
-                    <linearGradient id="colorScore" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="var(--primary)" stopOpacity={0.2} />
-                      <stop offset="95%" stopColor="var(--primary)" stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
-                  <XAxis 
-                    dataKey="date" 
-                    stroke="var(--muted-foreground)" 
-                    fontSize={11} 
-                    tickLine={false} 
-                    axisLine={false} 
-                    tick={{ fill: 'var(--muted-foreground)', fontWeight: 600 }}
-                  />
-                  <YAxis 
-                    stroke="var(--muted-foreground)" 
-                    fontSize={11} 
-                    tickLine={false} 
-                    axisLine={false} 
-                    domain={[0, 100]} 
-                    tick={{ fill: 'var(--muted-foreground)', fontWeight: 600 }}
-                  />
-                  <RechartsTooltip 
-                    contentStyle={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', borderRadius: '12px', fontSize: '12px', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }}
-                    itemStyle={{ color: 'var(--primary)', fontWeight: 'bold' }}
-                    cursor={{ stroke: 'var(--primary)', strokeWidth: 1, strokeDasharray: '4 4' }}
-                  />
-                  <Area 
-                    type="monotone" 
-                    dataKey="score" 
-                    stroke="var(--primary)" 
-                    strokeWidth={3} 
-                    fillOpacity={1} 
-                    fill="url(#colorScore)" 
-                    animationDuration={1500}
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
+              {isMounted ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={scoreTrend} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                    <defs>
+                      <linearGradient id="colorScore" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="var(--primary)" stopOpacity={0.2} />
+                        <stop offset="95%" stopColor="var(--primary)" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <XAxis 
+                      dataKey="date" 
+                      stroke="var(--muted-foreground)" 
+                      fontSize={11} 
+                      tickLine={false} 
+                      axisLine={false} 
+                      tick={{ fill: 'var(--muted-foreground)', fontWeight: 600 }}
+                    />
+                    <YAxis 
+                      stroke="var(--muted-foreground)" 
+                      fontSize={11} 
+                      tickLine={false} 
+                      axisLine={false} 
+                      domain={[0, 100]} 
+                      tick={{ fill: 'var(--muted-foreground)', fontWeight: 600 }}
+                    />
+                    <RechartsTooltip 
+                      contentStyle={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', borderRadius: '12px', fontSize: '12px', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }}
+                      itemStyle={{ color: 'var(--primary)', fontWeight: 'bold' }}
+                      cursor={{ stroke: 'var(--primary)', strokeWidth: 1, strokeDasharray: '4 4' }}
+                    />
+                    <Area 
+                      type="monotone" 
+                      dataKey="score" 
+                      stroke="var(--primary)" 
+                      strokeWidth={3} 
+                      fillOpacity={1} 
+                      fill="url(#colorScore)" 
+                      animationDuration={1500}
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="w-full h-full bg-muted/20 animate-pulse rounded-2xl" />
+              )}
             </CardContent>
           </Card>
         </div>
@@ -303,13 +297,12 @@ export default function DashboardPage() {
                 value={usagePercent} 
                 className={`h-2.5 mb-2 rounded-full ${isUsageHigh ? 'bg-destructive/10 [&>div]:bg-destructive' : 'bg-muted [&>div]:bg-primary'}`} 
               />
-              <div className="flex justify-between items-center text-[10px] font-bold uppercase tracking-widest">
+              <div className="text-[10px] font-bold uppercase tracking-widest">
                 {isUsageHigh ? (
                   <span className="text-destructive flex items-center gap-1"><AlertTriangle className="w-3 h-3" /> Nearing limit</span>
                 ) : (
                   <span className="text-muted-foreground">Resets in 12h</span>
                 )}
-                <span className="text-primary hover:underline cursor-pointer">Upgrade Plan</span>
               </div>
             </CardContent>
           </Card>
@@ -317,37 +310,81 @@ export default function DashboardPage() {
           {/* Subject Cards */}
           <div className="space-y-4">
             <div className="flex items-center justify-between px-1">
-              <h3 className="font-serif text-xl font-bold">Your Subjects</h3>
+              <div className="flex items-center gap-2">
+                <h3 className="font-serif text-xl font-bold">Your Subjects</h3>
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  onClick={() => setIsSubjectsExpanded(!isSubjectsExpanded)}
+                  className="h-8 w-8 rounded-full hover:bg-primary/10 text-[#A0A6B8] hover:text-primary transition-all duration-300"
+                  title={isSubjectsExpanded ? "Hide Subjects" : "Show Subjects"}
+                >
+                  <motion.div
+                    animate={{ rotate: isSubjectsExpanded ? 0 : 180 }}
+                    transition={{ duration: 0.3 }}
+                  >
+                    <ChevronDown className="w-5 h-5" />
+                  </motion.div>
+                </Button>
+              </div>
               <Link href="/subjects">
                 <Button variant="ghost" size="sm" className="text-primary font-bold text-xs uppercase tracking-widest">View All</Button>
               </Link>
             </div>
-            {data?.subjectMastery?.length > 0 ? data.subjectMastery.map((item: any, i: number) => (
-              <motion.div key={i} whileHover={{ x: 5 }} className="group" onClick={() => router.push(`/subjects`)}>
-                <Card className="border-border bg-card rounded-2xl overflow-hidden transition-all hover:border-primary/50 cursor-pointer">
-                  <CardContent className="p-4 flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0">
-                      <BookOpen className="w-6 h-6 text-primary" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex justify-between items-start">
-                        <h4 className="font-bold text-sm truncate">{item.subject}</h4>
-                        <span className="text-[10px] font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded uppercase">{item.score}% Mastery</span>
-                      </div>
-                      <Progress value={item.score} className="h-1 mt-2 bg-muted [&>div]:bg-primary" />
-                    </div>
-                    <ArrowRight className="w-4 h-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
-                  </CardContent>
-                </Card>
-              </motion.div>
-            )) : (
-              <Card className="border-border border-dashed bg-transparent rounded-2xl p-8 text-center text-balance">
-                <p className="text-sm text-muted-foreground mb-4">Add your first subject to start tracking your mastery.</p>
-                <Link href="/subjects">
-                  <Button variant="outline" className="rounded-xl text-xs font-bold uppercase">Add Subject</Button>
-                </Link>
-              </Card>
-            )}
+
+            <AnimatePresence initial={false}>
+              {isSubjectsExpanded && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0, scale: 0.95 }}
+                  animate={{ height: "auto", opacity: 1, scale: 1 }}
+                  exit={{ height: 0, opacity: 0, scale: 0.95 }}
+                  transition={{ duration: 0.3, ease: [0.23, 1, 0.32, 1] }}
+                  className="overflow-hidden"
+                >
+                  <div className="space-y-4 pt-1">
+                    {data?.subjectMastery?.length > 0 ? data.subjectMastery.map((item: any, i: number) => (
+                      <motion.div 
+                        key={i} 
+                        initial={{ opacity: 0, x: -10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: i * 0.05 }}
+                        whileHover={{ x: 5 }} 
+                        className="group" 
+                        onClick={() => router.push(`/subjects`)}
+                      >
+                        <Card className="border-border bg-card rounded-2xl overflow-hidden transition-all hover:border-primary/50 cursor-pointer shadow-sm hover:shadow-md">
+                          <CardContent className="p-4 flex items-center gap-4">
+                            <div className="w-12 h-12 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform duration-300">
+                              <BookOpen className="w-6 h-6 text-primary" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex justify-between items-start">
+                                <div className="flex flex-col">
+                                  <h4 className="font-bold text-sm truncate">{item.subject}</h4>
+                                  <span className="text-[10px] text-[#A0A6B8] font-medium uppercase tracking-tight">
+                                    {item.topicCount} {item.topicCount <= 1 ? 'topic' : 'topics'}
+                                  </span>
+                                </div>
+                                <span className="text-[10px] font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded uppercase tracking-wider">{item.score}% Mastery</span>
+                              </div>
+                              <Progress value={item.score} className="h-1 mt-1.5 bg-muted [&>div]:bg-primary" />
+                            </div>
+                            <ArrowRight className="w-4 h-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-all duration-300 group-hover:translate-x-1" />
+                          </CardContent>
+                        </Card>
+                      </motion.div>
+                    )) : (
+                      <Card className="border-border border-dashed bg-transparent rounded-2xl p-8 text-center">
+                        <p className="text-sm text-muted-foreground mb-4">Add your first subject to start tracking your mastery.</p>
+                        <Link href="/subjects">
+                          <Button variant="outline" className="rounded-xl text-xs font-bold uppercase tracking-widest">Add Subject</Button>
+                        </Link>
+                      </Card>
+                    )}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
 
           {/* History */}

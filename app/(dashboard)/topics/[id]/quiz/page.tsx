@@ -38,6 +38,9 @@ export default function QuizSessionPage() {
   const [editCorrectIndex, setEditCorrectIndex] = useState(0)
   const [isSavingEdit, setIsSavingEdit] = useState(false)
 
+  // Timer for duration
+  const [startTime] = useState<number>(Date.now())
+
   useEffect(() => {
     const fetchQuiz = async () => {
       try {
@@ -87,8 +90,17 @@ export default function QuizSessionPage() {
     } else {
       setCompleted(true)
       const finalScore = Math.round((correctCount / questions.length) * 100)
+      const durationSeconds = Math.round((Date.now() - startTime) / 1000)
+      
       try {
-        await logSession({ type: 'quiz', score: finalScore, totalQuestions: questions.length, correctAnswers: correctCount, topicId })
+        await logSession({ 
+          type: 'quiz', 
+          score: finalScore, 
+          totalQuestions: questions.length, 
+          correctAnswers: correctCount, 
+          topicId,
+          duration: durationSeconds
+        })
       } catch (e) {
         console.error("Failed to log session", e)
       }

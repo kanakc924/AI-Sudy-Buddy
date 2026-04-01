@@ -63,11 +63,8 @@ export function FlashcardPreview({ flashcards, topicId, onAddClick, onEditClick,
           Flashcards ({flashcards.length})
         </CardTitle>
         <div className="flex gap-2">
-          <Button variant="ghost" size="sm" onClick={onAddClick}>
-            <Plus className="h-4 w-4" />
-          </Button>
           <Button asChild size="sm" className="gap-2">
-            <Link href={`/flashcards/${topicId}`}>
+            <Link href={`/topics/${topicId}/flashcards`}>
               <Play className="h-4 w-4" />
               Practice
             </Link>

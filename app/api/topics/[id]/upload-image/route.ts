@@ -1,20 +1,38 @@
 import { NextResponse } from "next/server";
+import mongoose from "mongoose";
+
 import connectDB from "../../../../../lib/db";
 import Topic from "../../../../../models/Topic";
 import { withAuth, AuthenticatedRequest } from "../../../../../lib/middleware";
 import { extractTextFromImage } from "../../../../../services/ai.service";
+import { sanitizeText } from "../../../../../services/sanitizer.service";
 import { uploadImageToCloudinary } from "../../../../../services/cloudinary.service";
+import { errorResponse } from "../../../../../lib/handleApiError";
+import { aiRateLimiter } from "../../../../../lib/rateLimiter";
 
 async function uploadImage(req: AuthenticatedRequest, context: { params: Promise<{ id: string }> }) {
   try {
     await connectDB();
     const userId = req.user.id;
     const { id } = await context.params;
+    
+    // Validate ObjectId
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return NextResponse.json(
+        { success: false, error: "Invalid topic ID format", code: "VALIDATION_ERROR" },
+        { status: 400 }
+      );
+    }
+
+
+    // Check rate limit
+    const rateLimitResponse = await aiRateLimiter(req, userId);
+    if (rateLimitResponse) return rateLimitResponse;
 
     const topic = await Topic.findOne({ _id: id, userId });
     if (!topic) {
       return NextResponse.json(
-        { success: false, error: { message: "Topic not found", code: "NOT_FOUND" } },
+        { success: false, error: "Topic not found", code: "NOT_FOUND" },
         { status: 404 }
       );
     }
@@ -24,7 +42,7 @@ async function uploadImage(req: AuthenticatedRequest, context: { params: Promise
 
     if (!file) {
       return NextResponse.json(
-        { success: false, error: { message: "No image provided", code: "VALIDATION_ERROR" } },
+        { success: false, error: "No image provided", code: "VALIDATION_ERROR" },
         { status: 400 }
       );
     }
@@ -32,7 +50,7 @@ async function uploadImage(req: AuthenticatedRequest, context: { params: Promise
     // Validate file size (5MB)
     if (file.size > 5 * 1024 * 1024) {
       return NextResponse.json(
-        { success: false, error: { message: "Image size exceeds 5MB limit", code: "VALIDATION_ERROR" } },
+        { success: false, error: "Image size exceeds 5MB limit", code: "VALIDATION_ERROR" },
         { status: 400 }
       );
     }
@@ -40,7 +58,7 @@ async function uploadImage(req: AuthenticatedRequest, context: { params: Promise
     const allowedMimeTypes = ["image/jpeg", "image/png", "image/webp", "image/jpg"];
     if (!allowedMimeTypes.includes(file.type)) {
       return NextResponse.json(
-        { success: false, error: { message: "Invalid image type. Only JPG, PNG, WEBP allowed.", code: "VALIDATION_ERROR" } },
+        { success: false, error: "Invalid image type. Only JPG, PNG, WEBP allowed.", code: "VALIDATION_ERROR" },
         { status: 400 }
       );
     }
@@ -53,25 +71,41 @@ async function uploadImage(req: AuthenticatedRequest, context: { params: Promise
     const cloudinaryResult = await uploadImageToCloudinary(buffer);
 
     // Extract text from image via OpenRouter AI Vision
-    const extractedText = await extractTextFromImage(uint8Array, file.type);
+    const rawExtractedText = await extractTextFromImage(uint8Array, file.type);
+    
+    // Sanitize and format the text (fix spaces, line breaks, etc.)
+    const extractedText = await sanitizeText(rawExtractedText);
 
     // Save to Topic
-    topic.sourceImages.push({
-      url: cloudinaryResult.url,
-      publicId: cloudinaryResult.publicId,
-      extractedText: extractedText,
-      uploadedAt: new Date(),
-    });
+    const extension = file.name.split('.').pop() || "jpg";
+    const updatedTopic = await Topic.findOneAndUpdate(
+      { _id: id, userId },
+      {
+        $push: {
+          sourceMaterials: {
+            type: 'image',
+            title: file.name,
+            url: cloudinaryResult.url,
+            publicId: cloudinaryResult.publicId,
+            extractedText: extractedText,
+            fileName: file.name,
+            fileExtension: extension,
+            uploadedAt: new Date(),
+          },
+          sourceImages: {
+            url: cloudinaryResult.url,
+            publicId: cloudinaryResult.publicId,
+            extractedText: extractedText,
+            uploadedAt: new Date(),
+          }
+        }
+      },
+      { new: true }
+    ).populate({ path: "subjectId", model: (await import("@/models/Subject")).default });
 
-    await topic.save();
-
-    return NextResponse.json({ success: true, data: topic, extractedText });
+    return NextResponse.json({ success: true, data: updatedTopic, extractedText });
   } catch (error: any) {
-    console.error("Upload Image Error:", error);
-    return NextResponse.json(
-      { success: false, error: { message: error.message || "Internal Server Error", code: "INTERNAL_ERROR" } },
-      { status: 500 }
-    );
+    return errorResponse(error);
   }
 }
 

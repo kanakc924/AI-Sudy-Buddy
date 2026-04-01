@@ -1,9 +1,14 @@
 import mongoose, { Document, Model, Schema } from "mongoose";
 
-export interface ISourceImage {
-  url: string;
-  publicId: string;
+export interface ISourceMaterial {
+  type: 'image' | 'pdf' | 'text' | 'note' | 'diagram';
+  title: string;
+  url?: string;
+  publicId?: string;
   extractedText?: string;
+  content?: string;
+  fileName?: string;
+  fileExtension?: string;
   uploadedAt: Date;
 }
 
@@ -13,7 +18,8 @@ export interface ITopic extends Document {
   title: string;
   notes?: string;
   summary?: string;
-  sourceImages: ISourceImage[];
+  sourceImages: any[]; // Deprecated, move to sourceMaterials
+  sourceMaterials: ISourceMaterial[];
   createdAt: Date;
   updatedAt: Date;
 }
@@ -25,17 +31,28 @@ const topicSchema = new Schema<ITopic>(
     title: { type: String, required: true },
     notes: { type: String, default: "" },
     summary: { type: String },
-    sourceImages: [
+    sourceImages: [],
+    sourceMaterials: [
       {
-        url: { type: String, required: true },
-        publicId: { type: String, required: true },
+        type: { type: String, enum: ['image', 'pdf', 'text', 'note', 'diagram'], required: true },
+        title: { type: String, required: true },
+        url: { type: String },
+        publicId: { type: String },
         extractedText: { type: String },
+        content: { type: String },
+        fileName: { type: String },
+        fileExtension: { type: String },
         uploadedAt: { type: Date, default: Date.now },
       },
     ],
   },
   { timestamps: true }
 );
+
+// Force schema refresh in development to ensure new fields like sourceMaterials are recognized
+if (process.env.NODE_ENV === 'development' && mongoose.models.Topic) {
+  delete mongoose.models.Topic;
+}
 
 const Topic: Model<ITopic> =
   mongoose.models.Topic || mongoose.model<ITopic>("Topic", topicSchema);

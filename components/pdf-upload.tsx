@@ -3,10 +3,11 @@
 import { useRef, useState } from 'react'
 import { FileText, UploadCloud, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
+import { uploadDocument } from '@/services/api'
 
 interface PdfUploadProps {
   topicId: string
-  onExtracted: (text: string) => void
+  onExtracted: (text: string, updatedTopic?: any) => void
 }
 
 export function PdfUpload({ topicId, onExtracted }: PdfUploadProps) {
@@ -33,31 +34,20 @@ export function PdfUpload({ topicId, onExtracted }: PdfUploadProps) {
     setLoading(true)
 
     try {
-      const token = localStorage.getItem('study_buddy_token')
-      const formData = new FormData()
-      formData.append('file', file)
-
-      const res = await fetch(`/api/topics/${topicId}/upload`, {
-        method: 'POST',
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-        body: formData,
-      })
-
-      if (!res.ok) {
-        const err = await res.json()
-        throw new Error(err?.error || 'Upload failed')
-      }
-
-      const data = await res.json()
+      const data = await uploadDocument(topicId, file)
 
       if (!data.extractedText) {
         throw new Error('No text could be extracted')
       }
 
-      onExtracted(data.extractedText)
+      onExtracted(data.extractedText, data.data)
       toast.success(`Extracted text from ${file.name}`)
     } catch (err: any) {
-      toast.error(err.message || 'Failed to process file')
+      if (err.code === 'AI_RATE_LIMITED' || err.status === 429) {
+        toast.warning('The AI is currently busy. Please wait a moment and try again.', { icon: '⏳' })
+      } else {
+        toast.error(err.message || 'Failed to process file')
+      }
       setFileName('')
     } finally {
       setLoading(false)
@@ -84,7 +74,7 @@ export function PdfUpload({ topicId, onExtracted }: PdfUploadProps) {
 
   return (
     <div
-      className={`relative w-full p-8 border-2 border-dashed rounded-xl text-center transition-all cursor-pointer
+      className={`relative w-full p-8 min-h-[220px] flex flex-col items-center justify-center border-2 border-dashed rounded-xl text-center transition-all cursor-pointer
         ${dragActive ? 'border-primary bg-primary/10' : 'border-border hover:border-primary hover:bg-card'}
         ${loading ? 'opacity-60 pointer-events-none' : ''}
       `}
@@ -103,7 +93,7 @@ export function PdfUpload({ topicId, onExtracted }: PdfUploadProps) {
       />
 
       <div className="flex flex-col items-center gap-3">
-        <div className="p-3 bg-primary/10 rounded-full">
+        <div className="p-4 bg-primary/10 rounded-full">
           {loading
             ? <Loader2 className="w-6 h-6 text-primary animate-spin" />
             : <FileText className="w-6 h-6 text-primary" />

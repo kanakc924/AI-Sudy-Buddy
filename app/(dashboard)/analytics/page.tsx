@@ -23,10 +23,16 @@ export default function AnalyticsPage() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    import('@/services/api').then(({ getProgress }) => {
-      getProgress()
-        .then(res => setData(res.data))
-        .catch(e => console.error("Error fetching progress", e))
+    import('@/services/api').then(({ getStats, getHeatmap, getStreak }) => {
+      Promise.all([getStats(), getHeatmap(), getStreak()])
+        .then(([statsRes, heatmapRes, streakRes]) => {
+          setData({
+            ...statsRes.data,
+            activityHeatmap: heatmapRes.data || [],
+            currentStreak: streakRes.data?.currentStreak || 0
+          })
+        })
+        .catch(e => console.error("Error fetching analytics data", e))
         .finally(() => setLoading(false))
     })
   }, [])

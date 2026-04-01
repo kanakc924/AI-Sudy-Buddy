@@ -1,8 +1,11 @@
 import { NextResponse } from "next/server";
+import mongoose from "mongoose";
+
 import connectDB from "../../../../lib/db";
 import { withAuth, AuthenticatedRequest } from "../../../../lib/middleware";
 import { aiRateLimiter } from "../../../../lib/rateLimiter";
 import { generateFlashcardsFromImage, generateQuizFromImage } from "../../../../services/ai.service";
+import { errorResponse } from "../../../../lib/handleApiError";
 import Flashcard from "../../../../models/Flashcard";
 import Quiz from "../../../../models/Quiz";
 import Topic from "../../../../models/Topic";
@@ -15,7 +18,7 @@ async function generateFromImageRoute(req: AuthenticatedRequest) {
     const userId = req.user.id;
 
     // Check rate limit
-    const rateLimitResponse = aiRateLimiter(req, userId);
+    const rateLimitResponse = await aiRateLimiter(req, userId);
     if (rateLimitResponse) return rateLimitResponse;
 
     const formData = await req.formData();
@@ -25,15 +28,24 @@ async function generateFromImageRoute(req: AuthenticatedRequest) {
 
     if (!file || !type || !topicId) {
       return NextResponse.json(
-        { success: false, error: { message: "File, type, and topicId are required", code: "VALIDATION_ERROR" } },
+        { success: false, error: "File, type, and topicId are required", code: "VALIDATION_ERROR" },
         { status: 400 }
       );
     }
 
+    // Validate ObjectId
+    if (!mongoose.Types.ObjectId.isValid(topicId)) {
+      return NextResponse.json(
+        { success: false, error: "Invalid topic ID format", code: "VALIDATION_ERROR" },
+        { status: 400 }
+      );
+    }
+
+
     const topic = await Topic.findOne({ _id: topicId, userId });
     if (!topic) {
       return NextResponse.json(
-        { success: false, error: { message: "Topic not found", code: "NOT_FOUND" } },
+        { success: false, error: "Topic not found", code: "NOT_FOUND" },
         { status: 404 }
       );
     }
@@ -41,7 +53,7 @@ async function generateFromImageRoute(req: AuthenticatedRequest) {
     const allowedMimeTypes = ["image/jpeg", "image/png", "image/webp", "image/jpg"];
     if (!allowedMimeTypes.includes(file.type)) {
       return NextResponse.json(
-        { success: false, error: { message: "Invalid image type. Only JPG, PNG, WEBP allowed.", code: "VALIDATION_ERROR" } },
+        { success: false, error: "Invalid image type. Only JPG, PNG, WEBP allowed.", code: "VALIDATION_ERROR" },
         { status: 400 }
       );
     }
@@ -74,18 +86,14 @@ async function generateFromImageRoute(req: AuthenticatedRequest) {
       generatedData = [savedQuiz]; // Match the array expectation for quizzes
     } else {
       return NextResponse.json(
-        { success: false, error: { message: "Invalid type. Must be 'flashcard' or 'quiz'.", code: "VALIDATION_ERROR" } },
+        { success: false, error: "Invalid type. Must be 'flashcard' or 'quiz'.", code: "VALIDATION_ERROR" },
         { status: 400 }
       );
     }
 
     return NextResponse.json({ success: true, data: generatedData }, { status: 201 });
   } catch (error: any) {
-    console.error("Generate From Image Error:", error);
-    return NextResponse.json(
-      { success: false, error: { message: error.message || "Internal Server Error", code: "INTERNAL_ERROR" } },
-      { status: 500 }
-    );
+    return errorResponse(error);
   }
 }
 

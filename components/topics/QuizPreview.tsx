@@ -47,11 +47,8 @@ export function QuizPreview({ questions, topicId, lastScore, onAddClick, onEditC
           Quiz ({questions.length} questions)
         </CardTitle>
         <div className="flex gap-2">
-          <Button variant="ghost" size="sm" onClick={onAddClick}>
-            <Plus className="h-4 w-4" />
-          </Button>
           <Button asChild size="sm" className="gap-2">
-            <Link href={`/quiz/${topicId}`}>
+            <Link href={`/topics/${topicId}/quiz`}>
               <Play className="h-4 w-4" />
               Start Quiz
             </Link>

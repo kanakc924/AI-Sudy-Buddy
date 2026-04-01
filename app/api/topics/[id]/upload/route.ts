@@ -3,6 +3,8 @@ import connectDB from "../../../../../lib/db";
 import Topic from "../../../../../models/Topic";
 import { withAuth, AuthenticatedRequest } from "../../../../../lib/middleware";
 import { extractTextFromPdf } from "../../../../../services/pdf.service";
+import { sanitizeText } from "../../../../../services/sanitizer.service";
+import { errorResponse } from "../../../../../lib/handleApiError";
 
 async function uploadFile(req: AuthenticatedRequest, context: { params: Promise<{ id: string }> }) {
   try {
@@ -15,7 +17,7 @@ async function uploadFile(req: AuthenticatedRequest, context: { params: Promise<
 
     if (!file) {
       return NextResponse.json(
-        { success: false, error: { message: "No file provided", code: "VALIDATION_ERROR" } },
+        { success: false, error: "No file provided", code: "VALIDATION_ERROR" },
         { status: 400 }
       );
     }
@@ -23,7 +25,7 @@ async function uploadFile(req: AuthenticatedRequest, context: { params: Promise<
     // Validate file size (5MB)
     if (file.size > 5 * 1024 * 1024) {
       return NextResponse.json(
-        { success: false, error: { message: "File size exceeds 5MB limit", code: "VALIDATION_ERROR" } },
+        { success: false, error: "File size exceeds 5MB limit", code: "VALIDATION_ERROR" },
         { status: 400 }
       );
     }
@@ -31,7 +33,7 @@ async function uploadFile(req: AuthenticatedRequest, context: { params: Promise<
     const allowedMimeTypes = ["application/pdf", "text/plain"];
     if (!allowedMimeTypes.includes(file.type)) {
       return NextResponse.json(
-        { success: false, error: { message: "Invalid file type. Only PDF and TXT allowed.", code: "VALIDATION_ERROR" } },
+        { success: false, error: "Invalid file type. Only PDF and TXT allowed.", code: "VALIDATION_ERROR" },
         { status: 400 }
       );
     }
@@ -47,14 +49,32 @@ async function uploadFile(req: AuthenticatedRequest, context: { params: Promise<
       extractedText = buffer.toString("utf-8");
     }
 
-    // Return the extracted text to be previewed on the frontend
-    return NextResponse.json({ success: true, extractedText });
+    // Sanitize and format the text (fix spaces, line breaks, etc.)
+    extractedText = await sanitizeText(extractedText);
+
+    // Save formal source material to DB
+    const extension = file.name.split('.').pop() || "";
+    const updatedTopic = await Topic.findOneAndUpdate(
+      { _id: id, userId },
+      { 
+        $push: { 
+          sourceMaterials: {
+            type: file.type === "application/pdf" ? "pdf" : "text",
+            title: file.name,
+            fileName: file.name,
+            fileExtension: extension,
+            extractedText: extractedText,
+            uploadedAt: new Date()
+          } 
+        } 
+      },
+      { new: true }
+    ).populate({ path: "subjectId", model: (await import("@/models/Subject")).default });
+
+    // Return the extracted text and the updated topic
+    return NextResponse.json({ success: true, extractedText, data: updatedTopic });
   } catch (error: any) {
-    console.error("Upload File Error:", error);
-    return NextResponse.json(
-      { success: false, error: { message: error.message || "Internal Server Error", code: "INTERNAL_ERROR" } },
-      { status: 500 }
-    );
+    return errorResponse(error);
   }
 }
 

@@ -84,9 +84,9 @@ export function SubjectModal({ open, onOpenChange, subject, onSave }: SubjectMod
             </DialogDescription>
           </DialogHeader>
 
-          <div className="mt-6 space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="title">Title</Label>
+          <div className="mt-8 space-y-6">
+            <div className="space-y-4">
+              <Label htmlFor="title" className="text-sm font-semibold">Subject Name</Label>
               <Input
                 id="title"
                 placeholder="e.g., Biology 101"
@@ -95,12 +95,12 @@ export function SubjectModal({ open, onOpenChange, subject, onSave }: SubjectMod
                 className={errors.title ? 'border-destructive' : ''}
               />
               {errors.title && (
-                <p className="text-sm text-destructive">{errors.title}</p>
+                <p className="text-sm text-destructive mt-1">{errors.title}</p>
               )}
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="description">Description</Label>
+            <div className="space-y-4">
+              <Label htmlFor="description" className="text-sm font-semibold">Description</Label>
               <Textarea
                 id="description"
                 placeholder="e.g., Cell biology, genetics, ecosystems"

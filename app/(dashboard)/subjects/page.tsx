@@ -156,8 +156,8 @@ export default function SubjectsPage() {
                   <p className="text-muted-foreground text-sm line-clamp-2 mb-4 flex-1">
                     {subject.description || 'No description provided.'}
                   </p>
-                  <div className="flex items-center justify-between text-xs font-medium text-muted-foreground pt-4 border-t border-border/50">
-                    <span className="bg-card px-2 py-1 rounded-md border border-border">{topicCount} topics</span>
+                  <div className="flex items-center justify-between text-xs font-medium pt-4 border-t border-border/50">
+                    <span className="bg-card px-2 py-1 rounded-md border border-border text-[#A0A6B8]">{topicCount} {topicCount <= 1 ? 'topic' : 'topics'}</span>
                     <span className="flex items-center gap-1 text-primary group-hover:underline">Study <ArrowRight className="w-3 h-3" /></span>
                   </div>
                 </motion.div>
@@ -169,15 +169,13 @@ export default function SubjectsPage() {
 
       {/* Create/Edit Modal */}
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-        <DialogContent className="sm:max-w-md bg-popover text-popover-foreground border-border rounded-2xl w-[95vw] max-h-[90vh]">
+        <DialogContent className="sm:max-w-md bg-card text-card-foreground border-border rounded-2xl w-[95vw] max-h-[90vh] shadow-2xl opacity-100">
           <DialogHeader>
             <DialogTitle className="font-serif text-2xl">{editingSubject ? 'Edit Subject' : 'New Subject'}</DialogTitle>
-            <DialogDescription>
-              {editingSubject ? 'Update the details for this subject.' : 'Create a new container for your related topics.'}
-            </DialogDescription>
+
           </DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-4 py-4">
-            <div className="space-y-2">
+            <div className="space-y-4">
               <label className="text-sm font-medium ml-1">Subject Name</label>
               <Input 
                 value={name} 
@@ -188,7 +186,7 @@ export default function SubjectsPage() {
                 required
               />
             </div>
-            <div className="space-y-2">
+            <div className="space-y-4">
               <label className="text-sm font-medium ml-1">Description (Optional)</label>
               <textarea 
                 value={description} 
@@ -210,12 +208,10 @@ export default function SubjectsPage() {
 
       {/* Delete Confirmation */}
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <AlertDialogContent className="bg-popover border-border rounded-2xl">
+        <AlertDialogContent className="bg-card border-border rounded-2xl opacity-100 shadow-2xl">
           <AlertDialogHeader>
             <AlertDialogTitle className="font-serif text-xl">Are you absolutely sure?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This will permanently delete this subject and all of its associated topics, flashcards, and quizzes. This action cannot be undone.
-            </AlertDialogDescription>
+
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel className="border-border hover:bg-card h-10 rounded-xl">Cancel</AlertDialogCancel>

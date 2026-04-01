@@ -35,6 +35,9 @@ export default function FlashcardSessionPage() {
   const [editAnswer, setEditAnswer] = useState('')
   const [isSavingEdit, setIsSavingEdit] = useState(false)
 
+  // Timer for duration
+  const [startTime] = useState<number>(Date.now())
+
   useEffect(() => {
     const fetchDeck = async () => {
       try {
@@ -85,8 +88,17 @@ export default function FlashcardSessionPage() {
       setCompleted(true)
       const knownCount = correct ? correctCount + 1 : correctCount; // Calculate knownCount based on the last card's correctness
       const finalScore = Math.round((knownCount / cards.length) * 100)
+      const durationSeconds = Math.round((Date.now() - startTime) / 1000)
+      
       try {
-        await logSession({ type: 'flashcard', score: finalScore, totalQuestions: cards.length, correctAnswers: knownCount, topicId })
+        await logSession({ 
+          type: 'flashcard', 
+          score: finalScore, 
+          totalQuestions: cards.length, 
+          correctAnswers: knownCount, 
+          topicId,
+          duration: durationSeconds
+        })
       } catch (e) {
         console.error("Failed to log session", e)
       }

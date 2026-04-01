@@ -49,35 +49,39 @@ export function ActivityHeatmap({ sessions, title = "Study Activity", subtitle }
   }, [sessions])
 
   return (
-    <Card className="border-border bg-card rounded-3xl overflow-hidden shadow-sm">
-      <CardHeader className="pb-3 border-b border-border/50">
-        <CardTitle className="font-serif text-xl font-bold flex items-center gap-2">
+    <Card className="border-border bg-card rounded-3xl overflow-hidden shadow-sm h-full flex flex-col">
+      <CardHeader className="pb-2.5 border-b border-border/50">
+        <CardTitle className="font-serif text-xl font-bold flex items-center gap-3">
           <Target className="w-5 h-5 text-primary" />
           {title}
         </CardTitle>
       </CardHeader>
-      <CardContent className="p-6">
+      <CardContent className="px-6 py-4 flex-1 flex flex-col">
         {subtitle && (
-          <p className="text-xs text-muted-foreground uppercase tracking-wider mb-6">
+          <p className="text-xs text-[#A0A6B8] uppercase tracking-wider mb-6 font-medium">
             {subtitle}
           </p>
         )}
-        <div className="overflow-x-auto scrollbar-hide">
-          <div className="min-w-[600px]">
+        <div className="overflow-x-auto scrollbar-hide flex-1">
+          <div className="min-w-[600px] h-full flex flex-col justify-between">
             <TooltipProvider delayDuration={0}>
-              <div className="flex gap-2 items-start">
-                <div className="flex flex-col justify-between h-[116px] text-[10px] uppercase tracking-tighter text-muted-foreground pr-2 pt-2 font-bold">
-                  <span>Mon</span>
-                  <span>Wed</span>
-                  <span>Fri</span>
+              <div className="flex gap-3 items-start">
+                <div className="grid grid-rows-7 gap-3.5 text-[9px] uppercase tracking-wider text-[#A0A6B8] pr-2 font-bold pt-0.5">
+                  <span className="h-3.5 flex items-center">Mon</span>
+                  <span className="h-3.5 flex items-center">Tue</span>
+                  <span className="h-3.5 flex items-center">Wed</span>
+                  <span className="h-3.5 flex items-center">Thu</span>
+                  <span className="h-3.5 flex items-center">Fri</span>
+                  <span className="h-3.5 flex items-center">Sat</span>
+                  <span className="h-3.5 flex items-center">Sun</span>
                 </div>
-                <div className="grid grid-flow-col grid-rows-7 gap-1.5 flex-1">
+                <div className="grid grid-flow-col grid-rows-7 gap-3.5 flex-1">
                   {heatmapData.map((day, i) => (
                     <Tooltip key={i}>
                       <TooltipTrigger asChild>
                         <div className={`w-3.5 h-3.5 rounded-[3px] ${getHeatmapColor(day.count)} border border-border/10 hover:ring-2 hover:ring-primary/30 transition-all`} />
                       </TooltipTrigger>
-                      <TooltipContent side="top" className="bg-popover text-popover-foreground border-border text-xs rounded-lg">
+                      <TooltipContent side="top" className="bg-popover text-white border-border text-xs rounded-lg shadow-xl">
                         {day.count} sessions on {day.displayDate}
                       </TooltipContent>
                     </Tooltip>
@@ -86,14 +90,14 @@ export function ActivityHeatmap({ sessions, title = "Study Activity", subtitle }
               </div>
             </TooltipProvider>
             
-            <div className="flex items-center justify-between mt-6">
+            <div className="flex items-center justify-between mt-auto pt-6">
               <div className="flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full bg-primary" />
-                <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">
-                  Active Topic Focus
+                <div className="w-1.5 h-1.5 rounded-full bg-primary" />
+                <span className="text-[10px] text-[#A0A6B8] font-bold uppercase tracking-widest px-1">
+                  Topic Focus
                 </span>
               </div>
-              <div className="flex items-center gap-3 text-[10px] text-muted-foreground font-bold uppercase tracking-widest">
+              <div className="flex items-center gap-3 text-[10px] text-[#A0A6B8] font-bold uppercase tracking-widest leading-none">
                 <span>Less</span>
                 <div className="flex gap-1.5">
                   {[0, 1, 2, 3, 4].map(c => (
