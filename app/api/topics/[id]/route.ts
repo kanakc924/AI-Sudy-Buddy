@@ -104,7 +104,7 @@ async function deleteTopic(req: AuthenticatedRequest, context: { params: Promise
     await connectDB();
     const userId = req.user.id;
 
-    const topic = await Topic.findOneAndDelete({ _id: id, userId });
+    const topic = await Topic.findOne({ _id: id, userId });
 
     if (!topic) {
       return NextResponse.json(
@@ -117,8 +117,9 @@ async function deleteTopic(req: AuthenticatedRequest, context: { params: Promise
     await Flashcard.deleteMany({ topicId: id, userId });
     await Quiz.deleteMany({ topicId: id, userId });
     await Session.deleteMany({ topicId: id, userId });
+    await Topic.findByIdAndDelete(id);
 
-    return NextResponse.json({ success: true, data: {} });
+    return NextResponse.json({ success: true, data: { message: 'Topic and all related data deleted successfully' } });
   } catch (error: any) {
     console.error("Topic DELETE error:", error);
     return NextResponse.json(

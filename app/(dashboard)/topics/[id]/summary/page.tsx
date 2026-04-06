@@ -39,7 +39,6 @@ export default function SummaryPage() {
   }, [topicId])
 
   const wordCount = summary ? summary.split(/\s+/).length : 0
-  const readTime = Math.max(1, Math.ceil(wordCount / 200))
 
   return (
     <div className="absolute inset-0 z-50 bg-background overflow-y-auto">
@@ -78,7 +77,7 @@ export default function SummaryPage() {
               Topic Summary
             </h1>
             <p className="text-muted-foreground mb-12 flex items-center gap-2 text-sm font-medium tracking-wide">
-              {readTime} MIN READ <span className="w-1 h-1 bg-muted-foreground rounded-full" /> {wordCount} WORDS
+              {wordCount} WORDS
             </p>
 
             <div className="prose prose-invert prose-lg max-w-none">

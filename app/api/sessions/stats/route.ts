@@ -33,7 +33,6 @@ async function getStats(req: AuthenticatedRequest) {
 
     const sessionsForBasicStats = await Session.find({ userId });
     let averageQuizScore = 0;
-    let totalStudyTime = 0; // in seconds
 
     if (sessionsForBasicStats.length > 0) {
       const quizSessions = sessionsForBasicStats.filter(s => s.type === 'quiz');
@@ -41,7 +40,6 @@ async function getStats(req: AuthenticatedRequest) {
         const totalScore = quizSessions.reduce((acc, curr) => acc + curr.score, 0);
         averageQuizScore = Math.round(totalScore / quizSessions.length);
       }
-      totalStudyTime = sessionsForBasicStats.reduce((acc, curr) => acc + (curr.duration || 0), 0);
     }
 
     const sessions = await Session.find({ userId }).sort({ completedAt: 1 }).select("completedAt score type");
@@ -169,7 +167,6 @@ async function getStats(req: AuthenticatedRequest) {
         totalSubjects,
         totalTopics,
         totalSessions,
-        totalStudyTime,
         averageQuizScore,
         todaySessionCount,
         aiUsage: { count: aiUsageCount, max: 200 },

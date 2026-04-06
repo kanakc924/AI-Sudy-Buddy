@@ -31,7 +31,7 @@ export async function POST(req: NextRequest) {
     const newUser = await User.create({
       email,
       name,
-      password: hashedPassword,
+      passwordHash: hashedPassword,
     });
 
     const token = signToken({ id: newUser._id.toString(), email: newUser.email });

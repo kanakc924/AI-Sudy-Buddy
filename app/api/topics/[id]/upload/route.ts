@@ -3,7 +3,7 @@ import connectDB from "../../../../../lib/db";
 import Topic from "../../../../../models/Topic";
 import { withAuth, AuthenticatedRequest } from "../../../../../lib/middleware";
 import { extractTextFromPdf } from "../../../../../services/pdf.service";
-import { sanitizeText } from "../../../../../services/sanitizer.service";
+import { sanitizeText } from "../../../../../services/ai.service";
 import { errorResponse } from "../../../../../lib/handleApiError";
 
 async function uploadFile(req: AuthenticatedRequest, context: { params: Promise<{ id: string }> }) {

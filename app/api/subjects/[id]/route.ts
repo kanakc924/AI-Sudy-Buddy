@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server";
 import connectDB from "../../../../lib/db";
 import Subject from "../../../../models/Subject";
+import Topic from "../../../../models/Topic";
+import Flashcard from "../../../../models/Flashcard";
+import Quiz from "../../../../models/Quiz";
+import Session from "../../../../models/Session";
 import { withAuth, AuthenticatedRequest } from "../../../../lib/middleware";
 
 async function updateSubject(req: AuthenticatedRequest, context: { params: Promise<{ id: string }> }) {
@@ -39,7 +43,7 @@ async function deleteSubject(req: AuthenticatedRequest, context: { params: Promi
     const userId = req.user.id;
     const { id } = await context.params;
 
-    const subject = await Subject.findOneAndDelete({ _id: id, userId });
+    const subject = await Subject.findOne({ _id: id, userId });
 
     if (!subject) {
       return NextResponse.json(
@@ -48,10 +52,30 @@ async function deleteSubject(req: AuthenticatedRequest, context: { params: Promi
       );
     }
     
-    // Note: To be rigorous we should optionally delete Topics & Flashcards & Quizzes 
-    // relating to this Subject, but deleting the top level is fine for basic requirements.
+    // Get all topics under this subject
+    const topics = await Topic.find({ subjectId: id, userId }).select('_id');
+    const topicIds = topics.map(t => t._id);
 
-    return NextResponse.json({ success: true, data: {} });
+    // Cascade delete related data
+    if (topicIds.length > 0) {
+      await Flashcard.deleteMany({ topicId: { $in: topicIds }, userId });
+      await Quiz.deleteMany({ topicId: { $in: topicIds }, userId });
+      await Session.deleteMany({ topicId: { $in: topicIds }, userId });
+    }
+
+    // Delete topics
+    await Topic.deleteMany({ subjectId: id, userId });
+
+    // Delete subject
+    await Subject.findByIdAndDelete(id);
+
+    return NextResponse.json({ 
+      success: true, 
+      data: { 
+        message: 'Subject and all related data deleted successfully',
+        deletedTopics: topicIds.length,
+      } 
+    });
   } catch (error: any) {
     console.error("Delete Subject Error:", error);
     return NextResponse.json(

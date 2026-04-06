@@ -18,14 +18,14 @@ export async function POST(req: NextRequest) {
     }
 
     const user = await User.findOne({ email });
-    if (!user || !user.password) {
+    if (!user || !user.passwordHash) {
       return NextResponse.json(
         { success: false, error: { message: "Invalid credentials", code: "UNAUTHORIZED" } },
         { status: 401 }
       );
     }
 
-    const isMatch = await bcrypt.compare(password, user.password);
+    const isMatch = await bcrypt.compare(password, user.passwordHash);
     if (!isMatch) {
       return NextResponse.json(
         { success: false, error: { message: "Invalid credentials", code: "UNAUTHORIZED" } },

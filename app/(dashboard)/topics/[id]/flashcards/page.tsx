@@ -231,7 +231,7 @@ export default function FlashcardSessionPage() {
           <Button 
             className="flex-1 h-14 rounded-xl text-lg font-medium border-border hover:bg-card" 
             variant="outline"
-            onClick={() => router.push(`/topics/${topicId}`)}
+            onClick={() => router.push(`/topics/${topicId}?tab=generate`)}
           >
             <ArrowLeft className="w-5 h-5 mr-2" /> Back to Topic
           </Button>
@@ -256,11 +256,12 @@ export default function FlashcardSessionPage() {
   return (
     <div className="max-w-xl mx-auto px-4 py-6 md:py-12 flex flex-col h-[calc(100vh-140px)] md:h-auto">
       <div className="flex items-center justify-between mb-6 shrink-0">
-        <Link href={`/topics/${topicId}`}>
-          <Button variant="ghost" size="icon" className="rounded-full hover:bg-card border border-border/50 shadow-sm">
-            <ArrowLeft className="w-4 h-4 text-muted-foreground" />
-          </Button>
-        </Link>
+        <button
+          onClick={() => router.push(`/topics/${topicId}?tab=generate`)}
+          className="flex items-center justify-center w-10 h-10 rounded-full hover:bg-primary/10 hover:text-primary transition-all duration-200 border border-border/50 shadow-sm"
+        >
+          <ArrowLeft className="w-5 h-5 text-muted-foreground" />
+        </button>
         <span className="font-serif text-lg text-muted-foreground">
           Card {currentIndex + 1} of {cards.length}
         </span>

@@ -9,7 +9,7 @@ async function getMeHandler(req: AuthenticatedRequest) {
     await connectDB();
     const userId = req.user.id;
     
-    const user = await User.findById(userId).select("-password -__v");
+    const user = await User.findById(userId).select("-passwordHash -__v");
     
     if (!user) {
       return NextResponse.json(
