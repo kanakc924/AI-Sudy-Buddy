@@ -71,7 +71,7 @@ export function QuizPreview({ questions, topicId, lastScore, onAddClick, onEditC
         <div className="space-y-3">
           {displayQuestions.map((question, index) => (
             <div
-              key={question.id}
+              key={question.id || `quiz-${index}`}
               className="p-3 rounded-lg border border-border/30 bg-card/50 relative group/item"
             >
               <div className="flex justify-between items-start mb-2 pr-12">
