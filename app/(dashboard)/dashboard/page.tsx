@@ -168,7 +168,7 @@ export default function DashboardPage() {
       </div>
 
       <div className="grid lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 space-y-6">
+        <div className="lg:col-span-2 space-y-6 flex flex-col">
           {/* Heatmap */}
           <Card className="border-border bg-card rounded-3xl overflow-hidden shadow-sm">
             <CardHeader className="pb-3 border-b border-border/50">
@@ -274,9 +274,41 @@ export default function DashboardPage() {
               )}
             </CardContent>
           </Card>
+
+          {/* History */}
+          <Card className="border-border bg-card rounded-3xl shadow-sm flex-1 flex flex-col min-h-[250px]">
+            <CardHeader className="pb-3 border-b border-border/50">
+              <CardTitle className="font-serif text-lg font-bold">Study History</CardTitle>
+            </CardHeader>
+            <CardContent className="p-5 grid grid-cols-1 md:grid-cols-2 gap-4 content-start">
+              {recentSessions.length > 0 ? recentSessions.map((session: any, i: number) => (
+                <div key={i} className="flex items-center gap-3 p-3 rounded-xl border border-border/30 bg-muted/10 hover:bg-muted/40 transition-colors">
+                  <div className={`p-2.5 rounded-xl shrink-0 ${session.type === 'quiz' ? 'bg-primary/10 text-primary' : 'bg-mint/10 text-mint'}`}>
+                    {session.type === 'quiz' ? <Brain className="w-5 h-5" /> : <Sparkles className="w-5 h-5" />}
+                  </div>
+                  <div className="flex flex-col flex-1 overflow-hidden">
+                    <span className="font-bold text-sm truncate">{session.topic}</span>
+                    <div className="flex justify-between items-center text-[10px] text-muted-foreground font-medium uppercase tracking-tighter mt-1">
+                      <span className="truncate pr-2">{session.subject}</span>
+                      <span className="shrink-0">{session.timeAgo}</span>
+                    </div>
+                  </div>
+                  <div className={`font-serif font-bold text-lg shrink-0 ${session.score >= 80 ? 'text-mint' : session.score >= 50 ? 'text-primary' : 'text-destructive'}`}>
+                    {session.score}%
+                  </div>
+                </div>
+              )) : (
+                <div className="py-8 text-center md:col-span-2">
+                  <Target className="w-8 h-8 text-muted/30 mx-auto mb-3" />
+                  <p className="text-sm text-muted-foreground font-serif">No study activity yet</p>
+                  <p className="text-[10px] text-muted-foreground/60 font-medium uppercase tracking-widest mt-1">Complete a quiz or set to see history</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </div>
 
-        <div className="space-y-6">
+        <div className="space-y-6 flex flex-col">
           {/* AI Usage */}
           <Card className="border-border bg-card rounded-3xl shadow-sm border-l-4 border-l-primary">
             <CardContent className="p-6">
@@ -424,38 +456,6 @@ export default function DashboardPage() {
               )}
             </AnimatePresence>
           </div>
-
-          {/* History */}
-          <Card className="border-border bg-card rounded-3xl shadow-sm">
-            <CardHeader className="pb-3 border-b border-border/50">
-              <CardTitle className="font-serif text-lg font-bold">Study History</CardTitle>
-            </CardHeader>
-            <CardContent className="p-4 flex flex-col gap-4">
-              {recentSessions.length > 0 ? recentSessions.map((session: any, i: number) => (
-                <div key={i} className="flex items-center gap-3 p-2 rounded-xl hover:bg-muted/50 transition-colors">
-                  <div className={`p-2.5 rounded-xl shrink-0 ${session.type === 'quiz' ? 'bg-primary/10 text-primary' : 'bg-mint/10 text-mint'}`}>
-                    {session.type === 'quiz' ? <Brain className="w-4 h-4" /> : <Sparkles className="w-4 h-4" />}
-                  </div>
-                  <div className="flex flex-col flex-1 overflow-hidden">
-                    <span className="font-bold text-xs truncate">{session.topic}</span>
-                    <div className="flex justify-between items-center text-[10px] text-muted-foreground font-medium uppercase tracking-tighter">
-                      <span className="truncate">{session.subject}</span>
-                      <span>{session.timeAgo}</span>
-                    </div>
-                  </div>
-                  <div className={`font-serif font-bold text-sm shrink-0 ${session.score >= 80 ? 'text-mint' : session.score >= 50 ? 'text-primary' : 'text-destructive'}`}>
-                    {session.score}%
-                  </div>
-                </div>
-              )) : (
-                <div className="py-8 text-center">
-                  <Target className="w-8 h-8 text-muted/30 mx-auto mb-3" />
-                  <p className="text-sm text-muted-foreground font-serif">No study activity yet</p>
-                  <p className="text-[10px] text-muted-foreground/60 font-medium uppercase tracking-widest mt-1">Complete a quiz or set to see history</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
         </div>
       </div>
     </div>
