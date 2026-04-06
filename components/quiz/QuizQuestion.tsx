@@ -35,8 +35,8 @@ export function QuizQuestion({ question, selectedAnswer, onSelect, onNext }: Qui
               onClick={() => !isAnswered && onSelect(index)}
               disabled={isAnswered}
               className={clsx(
-                "w-full p-5 sm:p-6 rounded-xl border text-left flex items-center justify-between transition-all duration-300",
-                !isAnswered ? "bg-surface border-border hover:border-accent hover:bg-surface2 cursor-pointer shadow-sm active:scale-[0.99]" : "",
+                "w-full p-5 sm:p-6 rounded-xl border text-left flex items-center justify-between transition-all duration-200",
+                !isAnswered ? "bg-surface border-border hover:border-accent hover:bg-accent/5 hover:translate-x-1 cursor-pointer shadow-sm active:scale-[0.99]" : "",
                 isCorrect ? "bg-green/10 border-green text-text shadow-[0_0_15px_rgba(74,222,128,0.15)]" : "",
                 isWrongSelection ? "bg-red/10 border-red text-text" : "",
                 isAnswered && !isCorrect && !isWrongSelection ? "bg-surface opacity-50 border-border" : ""

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import connectDB from "../../../../lib/db";
 import User from "../../../../models/User";
+import ApiUsage from "../../../../models/ApiUsage";
 import { withAuth, AuthenticatedRequest } from "../../../../lib/middleware";
 
 async function getMeHandler(req: AuthenticatedRequest) {
@@ -17,7 +18,17 @@ async function getMeHandler(req: AuthenticatedRequest) {
       );
     }
 
-    return NextResponse.json({ success: true, data: user });
+    // Fetch AI usage for today
+    const todayStr = new Date().toISOString().split("T")[0];
+    const usageDoc = await ApiUsage.findOne({ userId, date: todayStr });
+    
+    const userData = {
+      ...user.toObject(),
+      aiUsageToday: usageDoc ? usageDoc.count : 0,
+      aiDailyLimit: 200 // Constant from PRD
+    };
+
+    return NextResponse.json({ success: true, data: userData });
   } catch (error: any) {
     console.error("GetMe Error:", error);
     return NextResponse.json(

@@ -13,6 +13,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { Button } from '@/components/ui/button'
 
 import { LoadingSkeleton } from '@/components/loading-skeleton'
+import { EmptyState } from '@/components/ui/empty-state'
 import Link from 'next/link'
 
 export default function DashboardPage() {
@@ -150,7 +151,7 @@ export default function DashboardPage() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {stats.map((stat, i) => (
           <motion.div key={i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
-            <Card className="border-border bg-card rounded-2xl h-full transition-all hover:border-primary/30">
+            <Card className="border-border bg-card rounded-2xl h-full transition-all duration-200 hover:border-primary/50 hover:shadow-[0_8px_32px_rgba(124,92,252,0.15)] hover:-translate-y-1">
               <CardContent className="p-4 flex items-center gap-4">
                 <div className="p-2.5 rounded-xl bg-muted border border-border">
                   <stat.icon className="w-5 h-5 text-foreground" />
@@ -307,6 +308,40 @@ export default function DashboardPage() {
             </CardContent>
           </Card>
 
+          {/* Weak Topics */}
+          {weakTopics.length > 0 && (
+            <Card className="border-amber-500/20 bg-amber-500/5 rounded-3xl shadow-sm overflow-hidden">
+              <CardHeader className="pb-3 border-b border-amber-500/10 bg-amber-500/10">
+                <CardTitle className="text-sm font-bold flex items-center gap-2 text-amber-500 font-serif">
+                  <AlertTriangle className="w-4 h-4" />
+                  Focus Required
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-4 space-y-3">
+                <p className="text-[10px] text-amber-500/70 font-bold uppercase tracking-wider mb-1">Weakest Topics</p>
+                {weakTopics.map((topic: any, i: number) => (
+                  <Link key={topic._id} href={`/topics/${topic._id}`} className="block group">
+                    <div className="flex items-center justify-between p-2 rounded-xl hover:bg-amber-500/10 transition-colors">
+                      <div className="flex flex-col min-w-0">
+                        <span className="text-sm font-bold text-foreground truncate group-hover:text-amber-500 transition-colors">{topic.title}</span>
+                        <span className="text-[10px] text-muted-foreground truncate">{topic.subject}</span>
+                      </div>
+                      <div className="flex flex-col items-end shrink-0">
+                        <span className="text-xs font-bold text-amber-600">{topic.score}%</span>
+                        <div className="w-12 h-1 bg-amber-200 rounded-full mt-1 overflow-hidden">
+                          <div className="h-full bg-amber-500" style={{ width: `${topic.score}%` }} />
+                        </div>
+                      </div>
+                    </div>
+                  </Link>
+                ))}
+                <p className="text-[9px] text-muted-foreground text-center mt-2 italic">
+                  Complete more quizzes to update your progress.
+                </p>
+              </CardContent>
+            </Card>
+          )}
+
           {/* Subject Cards */}
           <div className="space-y-4">
             <div className="flex items-center justify-between px-1">
@@ -374,12 +409,14 @@ export default function DashboardPage() {
                         </Card>
                       </motion.div>
                     )) : (
-                      <Card className="border-border border-dashed bg-transparent rounded-2xl p-8 text-center">
-                        <p className="text-sm text-muted-foreground mb-4">Add your first subject to start tracking your mastery.</p>
-                        <Link href="/subjects">
-                          <Button variant="outline" className="rounded-xl text-xs font-bold uppercase tracking-widest">Add Subject</Button>
-                        </Link>
-                      </Card>
+                      <EmptyState 
+                        icon={BookOpen}
+                        title="No subjects yet"
+                        description="Add your first subject to start organizing your study materials and tracking your overall mastery."
+                        actionLabel="Add Subject"
+                        onAction={() => router.push('/subjects')}
+                        className="py-12"
+                      />
                     )}
                   </div>
                 </motion.div>
@@ -410,7 +447,11 @@ export default function DashboardPage() {
                   </div>
                 </div>
               )) : (
-                <p className="text-xs text-muted-foreground text-center py-4">No recent activity.</p>
+                <div className="py-8 text-center">
+                  <Target className="w-8 h-8 text-muted/30 mx-auto mb-3" />
+                  <p className="text-sm text-muted-foreground font-serif">No study activity yet</p>
+                  <p className="text-[10px] text-muted-foreground/60 font-medium uppercase tracking-widest mt-1">Complete a quiz or set to see history</p>
+                </div>
               )}
             </CardContent>
           </Card>

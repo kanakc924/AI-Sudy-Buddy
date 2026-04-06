@@ -13,12 +13,21 @@ const apiFetch = async (path: string, options?: RequestInit) => {
   const json = await res.json().catch(() => ({}));
 
   if (!res.ok) {
-    // Throw structured error so catch blocks get code + error fields
     const err = new Error(json?.error || 'Request failed') as any
     err.status = res.status
     err.code = json?.code || 'UNKNOWN_ERROR'
     err.error = json?.error
     throw err
+  }
+
+  // Capture rate limit headers for real-time usage sync
+  const limit = res.headers.get('X-RateLimit-Limit');
+  const remaining = res.headers.get('X-RateLimit-Remaining');
+  if (limit && remaining && json && typeof json === 'object') {
+    json._usage = {
+      limit: parseInt(limit, 10),
+      remaining: parseInt(remaining, 10)
+    };
   }
 
   return json

@@ -60,8 +60,8 @@ export function ImageUpload({ topicId, onExtracted }: { topicId: string, onExtra
 
   return (
     <div 
-      className={`relative border-2 border-dashed rounded-xl p-8 min-h-[220px] flex flex-col items-center justify-center text-center transition-all cursor-pointer ${
-        isDragging ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50 hover:bg-card/50'
+      className={`relative border-2 border-dashed rounded-xl p-8 min-h-[220px] flex flex-col items-center justify-center text-center transition-all duration-200 cursor-pointer ${
+        isDragging ? 'border-primary bg-primary/10' : 'border-border hover:border-primary hover:bg-primary/8 hover:shadow-[0_0_20px_rgba(124,92,252,0.15)]'
       }`}
       onDragEnter={() => setIsDragging(true)}
       onDragLeave={() => setIsDragging(false)}

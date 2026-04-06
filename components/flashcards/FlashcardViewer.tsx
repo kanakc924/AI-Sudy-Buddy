@@ -33,7 +33,7 @@ export function FlashcardViewer({ card, onAnswer }: FlashcardViewerProps) {
       {/* 3D Flip Card */}
       <div 
         className={clsx(
-          "relative w-full aspect-[4/3] sm:aspect-[3/2] cursor-pointer preserve-3d transition-transform duration-500 ease-out z-10",
+          "relative w-full aspect-4/3 sm:aspect-3/2 cursor-pointer preserve-3d transition-transform duration-500 ease-out z-10",
           isFlipped ? "rotate-y-180" : "",
           animateState === "slide-in-right" ? "animate-in slide-in-from-right-8 fade-in duration-300" :
           animateState === "slide-out-right" ? "animate-out slide-out-to-right-12 fade-out duration-300" :
@@ -64,13 +64,13 @@ export function FlashcardViewer({ card, onAnswer }: FlashcardViewerProps) {
       )}>
          <button 
            onClick={() => handleAnswer(false)}
-           className="px-8 py-3 lg:px-12 lg:py-4 rounded-xl font-bold bg-surface2 border border-red/30 text-red hover:bg-red/10 transition-colors shadow-lg active:scale-95"
+           className="px-8 py-3 lg:px-12 lg:py-4 rounded-xl font-bold bg-surface2 border border-red/30 text-red hover:bg-red/10 hover:border-red/50 hover:shadow-[0_0_20px_rgba(239,68,68,0.2)] hover:-translate-y-1 transition-all duration-200 active:scale-95"
          >
             Missed It
          </button>
          <button 
            onClick={() => handleAnswer(true)}
-           className="px-8 py-3 lg:px-12 lg:py-4 rounded-xl font-bold bg-surface2 border border-green/30 text-green hover:bg-green/10 transition-colors shadow-lg active:scale-95"
+           className="px-8 py-3 lg:px-12 lg:py-4 rounded-xl font-bold bg-surface2 border border-green/30 text-green hover:bg-green/10 hover:border-green/50 hover:shadow-[0_0_20px_rgba(34,197,94,0.2)] hover:-translate-y-1 transition-all duration-200 active:scale-95"
          >
             Got It
          </button>

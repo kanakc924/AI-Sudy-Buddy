@@ -74,8 +74,8 @@ export function PdfUpload({ topicId, onExtracted }: PdfUploadProps) {
 
   return (
     <div
-      className={`relative w-full p-8 min-h-[220px] flex flex-col items-center justify-center border-2 border-dashed rounded-xl text-center transition-all cursor-pointer
-        ${dragActive ? 'border-primary bg-primary/10' : 'border-border hover:border-primary hover:bg-card'}
+      className={`relative w-full p-8 min-h-[220px] flex flex-col items-center justify-center border-2 border-dashed rounded-xl text-center transition-all duration-200 cursor-pointer
+        ${dragActive ? 'border-primary bg-primary/10' : 'border-border hover:border-primary hover:bg-primary/8 hover:shadow-[0_0_20px_rgba(124,92,252,0.15)]'}
         ${loading ? 'opacity-60 pointer-events-none' : ''}
       `}
       onDragEnter={handleDrag}

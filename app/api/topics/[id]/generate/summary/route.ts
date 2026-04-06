@@ -13,8 +13,14 @@ async function generateSummaryRoute(req: AuthenticatedRequest, context: { params
     const { id } = await context.params;
 
     // Check rate limit
-    const rateLimitResponse = await aiRateLimiter(req, userId);
-    if (rateLimitResponse) return rateLimitResponse;
+    const { limitedResponse, limit, remaining, reset } = await aiRateLimiter(req, userId);
+    if (limitedResponse) return limitedResponse;
+
+    const headers = {
+      "X-RateLimit-Limit": limit.toString(),
+      "X-RateLimit-Remaining": remaining.toString(),
+      "X-RateLimit-Reset": reset.toString(),
+    };
 
     const topic = await Topic.findOne({ _id: id, userId });
 
@@ -38,7 +44,7 @@ async function generateSummaryRoute(req: AuthenticatedRequest, context: { params
     topic.summary = summaryData;
     await topic.save();
 
-    return NextResponse.json({ success: true, data: topic }, { status: 201 });
+    return NextResponse.json({ success: true, data: topic }, { status: 201, headers });
   } catch (error: any) {
     return errorResponse(error);
   }

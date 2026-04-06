@@ -52,8 +52,8 @@ export function AppSidebar() {
           <Link 
             href="/dashboard"
             className={cn(
-              "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
-              pathname === '/dashboard' ? "bg-sidebar-accent text-sidebar-accent-foreground" : "text-muted-foreground hover:bg-sidebar-accent/50 hover:text-foreground"
+              "flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium transition-all duration-200 cursor-pointer",
+              pathname === '/dashboard' ? "bg-sidebar-accent text-sidebar-accent-foreground" : "text-muted-foreground hover:bg-primary/10 hover:text-primary"
             )}
           >
             <LayoutDashboard className="w-4 h-4" />
@@ -95,8 +95,8 @@ export function AppSidebar() {
                         key={subject._id}
                         href={`/subjects/${subject._id}`}
                         className={cn(
-                          "flex flex-col gap-1.5 px-3 py-2 rounded-lg text-sm transition-colors group",
-                          isActive ? "bg-sidebar-accent text-sidebar-accent-foreground" : "text-muted-foreground hover:bg-sidebar-accent/50 hover:text-foreground"
+                          "flex flex-col gap-1.5 px-3 py-2 rounded-lg text-sm transition-all duration-200 group",
+                          isActive ? "bg-sidebar-accent text-sidebar-accent-foreground" : "text-muted-foreground hover:bg-primary/10 hover:text-primary hover:border-l-2 hover:border-primary hover:pl-4"
                         )}
                       >
                         <div className="flex items-center gap-3">

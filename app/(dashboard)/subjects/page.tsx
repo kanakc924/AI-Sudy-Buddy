@@ -136,7 +136,7 @@ export default function SubjectsPage() {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, scale: 0.95 }}
                   transition={{ delay: index * 0.05 }}
-                  className="glass-card glow-hover rounded-xl p-6 cursor-pointer flex flex-col h-full"
+                  className="glass-card rounded-xl p-6 cursor-pointer flex flex-col h-full hover:border-primary/50 hover:shadow-[0_8px_32px_rgba(124,92,252,0.2)] hover:-translate-y-1 transition-all duration-200"
                   onClick={() => router.push(`/subjects/${subject._id}`)}
                 >
                   <div className="flex items-start justify-between mb-4">

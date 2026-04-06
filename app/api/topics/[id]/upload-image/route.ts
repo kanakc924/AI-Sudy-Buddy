@@ -26,8 +26,14 @@ async function uploadImage(req: AuthenticatedRequest, context: { params: Promise
 
 
     // Check rate limit
-    const rateLimitResponse = await aiRateLimiter(req, userId);
-    if (rateLimitResponse) return rateLimitResponse;
+    const { limitedResponse, limit, remaining, reset } = await aiRateLimiter(req, userId);
+    if (limitedResponse) return limitedResponse;
+
+    const headers = {
+      "X-RateLimit-Limit": limit.toString(),
+      "X-RateLimit-Remaining": remaining.toString(),
+      "X-RateLimit-Reset": reset.toString(),
+    };
 
     const topic = await Topic.findOne({ _id: id, userId });
     if (!topic) {
@@ -103,7 +109,7 @@ async function uploadImage(req: AuthenticatedRequest, context: { params: Promise
       { new: true }
     ).populate({ path: "subjectId", model: (await import("@/models/Subject")).default });
 
-    return NextResponse.json({ success: true, data: updatedTopic, extractedText });
+    return NextResponse.json({ success: true, data: updatedTopic, extractedText }, { headers });
   } catch (error: any) {
     return errorResponse(error);
   }

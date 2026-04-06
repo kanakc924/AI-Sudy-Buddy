@@ -219,7 +219,7 @@ export default function TopicsPage() {
                   onClick={() => router.push(`/topics/${topic._id}`)}
                   className="group relative"
                 >
-                  <Card className="bg-card rounded-3xl overflow-hidden shadow-sm transition-all duration-300 hover:shadow-xl hover:-translate-y-1 cursor-pointer h-full border-border/60">
+                  <Card className="bg-card rounded-3xl overflow-hidden shadow-sm hover:shadow-[0_8px_32px_rgba(124,92,252,0.2)] hover:-translate-y-1 hover:border-primary/50 cursor-pointer h-full border-border/60 transition-all duration-200">
                     <div className="p-6 space-y-4">
                       <div className="flex items-start justify-between gap-4">
                         <div className="space-y-1">

@@ -3,8 +3,9 @@
 import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, BookOpen, Settings, Zap, X, BrainCircuit } from "lucide-react";
+import { LayoutDashboard, BookOpen, Settings, Zap, X, BrainCircuit, Brain, AlertTriangle } from "lucide-react";
 import { useAuthContext } from "../../context/AuthContext";
+import { Progress } from "../ui/progress";
 
 import clsx from "clsx";
 
@@ -80,9 +81,37 @@ export function Sidebar({ isOpen, onClose, streak = 0 }: SidebarProps) {
           })}
         </nav>
 
-        {/* Footer info (Streak & User) */}
-        <div className="p-4 border-t border-border">
-          <div className="mb-4">
+        {/* Footer info (AI Usage, Streak & User) */}
+        <div className="p-4 border-t border-border space-y-4">
+          {/* AI Usage Indicator */}
+          {user && (
+            <div className="px-4 py-3 rounded-lg bg-surface2 border border-border/50">
+              <div className="flex justify-between items-center mb-2">
+                <div className="flex items-center gap-2">
+                  <Brain size={14} className="text-primary" />
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">AI Power</span>
+                </div>
+                <span className="text-[10px] font-bold text-foreground">
+                  {user.aiUsageToday || 0}/{user.aiDailyLimit || 200}
+                </span>
+              </div>
+              <Progress 
+                value={Math.min(100, ((user.aiUsageToday || 0) / (user.aiDailyLimit || 200)) * 100)} 
+                className={clsx(
+                  "h-1.5",
+                  (user.aiUsageToday || 0) / (user.aiDailyLimit || 200) >= 0.8 ? "[&>div]:bg-destructive" : "[&>div]:bg-primary"
+                )}
+              />
+              {(user.aiUsageToday || 0) / (user.aiDailyLimit || 200) >= 0.8 && (
+                <div className="mt-1.5 flex items-center gap-1">
+                  <AlertTriangle size={10} className="text-destructive" />
+                  <span className="text-[9px] font-medium text-destructive">Nearing daily limit</span>
+                </div>
+              )}
+            </div>
+          )}
+
+          <div className="mb-0">
             <div className={clsx(
               "flex items-center justify-between px-4 py-3 rounded-lg bg-surface2",
               isHotStreak ? "animate-pulse shadow-[0_0_10px_var(--gold)] border border-gold/30" : ""

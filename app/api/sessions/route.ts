@@ -4,19 +4,30 @@ import Session from "../../../models/Session";
 import Topic from "../../../models/Topic";
 import { withAuth, AuthenticatedRequest } from "../../../lib/middleware";
 
+import { CreateSessionSchema } from "../../../schemas/session.schema";
+
 async function logSession(req: AuthenticatedRequest) {
   try {
     await connectDB();
     const userId = req.user.id;
     const body = await req.json();
-    const { topicId, type, score, totalQuestions, correctAnswers, duration } = body;
-    
-    if (!topicId || !type || score === undefined || totalQuestions === undefined || correctAnswers === undefined) {
+    const validation = CreateSessionSchema.safeParse(body);
+
+    if (!validation.success) {
       return NextResponse.json(
-        { success: false, error: { message: "Missing required fields", code: "VALIDATION_ERROR" } },
+        { 
+          success: false, 
+          error: { 
+            message: validation.error.issues[0].message, 
+            code: "VALIDATION_ERROR",
+            details: validation.error.issues
+          } 
+        },
         { status: 400 }
       );
     }
+
+    const { type, score, totalQuestions, correctAnswers, topicId, duration, answers } = validation.data;
 
     const session = await Session.create({
       userId,
@@ -25,7 +36,8 @@ async function logSession(req: AuthenticatedRequest) {
       score,
       totalQuestions,
       correctAnswers,
-      duration: duration || 0,
+      answers,
+      duration
     });
 
     return NextResponse.json({ success: true, data: session }, { status: 201 });

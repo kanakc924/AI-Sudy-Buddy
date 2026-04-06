@@ -3,6 +3,7 @@ import connectDB from "../../../lib/db";
 import Subject from "../../../models/Subject";
 import Topic from "../../../models/Topic";
 import { withAuth, AuthenticatedRequest } from "../../../lib/middleware";
+import { CreateSubjectSchema } from "../../../schemas/subject.schema";
 
 async function getSubjects(req: AuthenticatedRequest) {
   try {
@@ -12,7 +13,7 @@ async function getSubjects(req: AuthenticatedRequest) {
     
     const subjectsWithCounts = await Promise.all(
       subjects.map(async (subject) => {
-        const topicCount = await Topic.countDocuments({ subjectId: subject._id });
+        const topicCount = await Topic.countDocuments({ subjectId: subject._id, userId });
         return {
           ...subject.toObject(),
           topicCount
@@ -35,14 +36,23 @@ async function createSubject(req: AuthenticatedRequest) {
     await connectDB();
     const userId = req.user.id;
     const body = await req.json();
-    const { title, description } = body;
+    const validation = CreateSubjectSchema.safeParse(body);
 
-    if (!title) {
+    if (!validation.success) {
       return NextResponse.json(
-        { success: false, error: { message: "Subject title is required", code: "VALIDATION_ERROR" } },
+        { 
+          success: false, 
+          error: { 
+            message: validation.error.issues[0].message, 
+            code: "VALIDATION_ERROR",
+            details: validation.error.issues
+          } 
+        },
         { status: 400 }
       );
     }
+
+    const { title, description } = validation.data;
 
     const subject = await Subject.create({
       userId,

@@ -11,14 +11,12 @@ const openrouter = createOpenRouter({
 const MODELS = [
   'google/gemma-3-27b-it:free',
   'google/gemma-3-12b-it:free',
-  'mistralai/mistral-small-3.1-24b-instruct:free',
   process.env.OPENROUTER_FALLBACK_MODEL || 'openrouter/auto',
 ]
 
 const VISION_MODELS = [
   'google/gemma-3-27b-it:free',
   'google/gemma-3-12b-it:free',
-  'qwen/qwen2.5-vl-72b-instruct:free',
   process.env.OPENROUTER_FALLBACK_MODEL || 'openrouter/auto',
 ]
 

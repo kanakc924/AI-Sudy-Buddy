@@ -28,6 +28,7 @@ export default function FlashcardSessionPage() {
   const [completed, setCompleted] = useState(false)
   const [missedCards, setMissedCards] = useState<any[]>([])
   const [correctCount, setCorrectCount] = useState(0)
+  const [answers, setAnswers] = useState<Array<{ questionId: string, isCorrect: boolean }>>([])
 
   // Edit State
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
@@ -80,6 +81,11 @@ export default function FlashcardSessionPage() {
       setMissedCards(prev => [...prev, cards[currentIndex]])
     }
 
+    setAnswers(prev => [...prev, { 
+      questionId: cards[currentIndex]._id, 
+      isCorrect: correct 
+    }])
+
     if (currentIndex < cards.length - 1) {
       setIsFlipped(false)
       // Small timeout to let CSS un-flip before changing text
@@ -91,13 +97,19 @@ export default function FlashcardSessionPage() {
       const durationSeconds = Math.round((Date.now() - startTime) / 1000)
       
       try {
+        const finalAnswers = [
+          ...answers,
+          { questionId: cards[currentIndex]._id, isCorrect: correct }
+        ]
+        
         await logSession({ 
           type: 'flashcard', 
           score: finalScore, 
           totalQuestions: cards.length, 
           correctAnswers: knownCount, 
           topicId,
-          duration: durationSeconds
+          duration: durationSeconds,
+          answers: finalAnswers
         })
       } catch (e) {
         console.error("Failed to log session", e)
@@ -231,6 +243,7 @@ export default function FlashcardSessionPage() {
               setCompleted(false)
               setMissedCards([])
               setCorrectCount(0)
+              setAnswers([])
             }}
           >
             <RefreshCw className="w-5 h-5 mr-2" /> Study Again

@@ -18,8 +18,14 @@ async function generateFromImageRoute(req: AuthenticatedRequest) {
     const userId = req.user.id;
 
     // Check rate limit
-    const rateLimitResponse = await aiRateLimiter(req, userId);
-    if (rateLimitResponse) return rateLimitResponse;
+    const { limitedResponse, limit, remaining, reset } = await aiRateLimiter(req, userId);
+    if (limitedResponse) return limitedResponse;
+
+    const headers = {
+      "X-RateLimit-Limit": limit.toString(),
+      "X-RateLimit-Remaining": remaining.toString(),
+      "X-RateLimit-Reset": reset.toString(),
+    };
 
     const formData = await req.formData();
     const file = formData.get("file") as File | null;
@@ -91,7 +97,7 @@ async function generateFromImageRoute(req: AuthenticatedRequest) {
       );
     }
 
-    return NextResponse.json({ success: true, data: generatedData }, { status: 201 });
+    return NextResponse.json({ success: true, data: generatedData }, { status: 201, headers });
   } catch (error: any) {
     return errorResponse(error);
   }

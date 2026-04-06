@@ -14,8 +14,14 @@ async function generateFlashcardsRoute(req: AuthenticatedRequest, context: { par
     const { id } = await context.params;
 
     // Check rate limit
-    const rateLimitResponse = await aiRateLimiter(req, userId);
-    if (rateLimitResponse) return rateLimitResponse;
+    const { limitedResponse, limit, remaining, reset } = await aiRateLimiter(req, userId);
+    if (limitedResponse) return limitedResponse;
+
+    const headers = {
+      "X-RateLimit-Limit": limit.toString(),
+      "X-RateLimit-Remaining": remaining.toString(),
+      "X-RateLimit-Reset": reset.toString(),
+    };
 
     // Check for replace flag in body
     let replace = false;
@@ -59,7 +65,7 @@ async function generateFlashcardsRoute(req: AuthenticatedRequest, context: { par
       }))
     );
 
-    return NextResponse.json({ success: true, data: savedCards }, { status: 201 });
+    return NextResponse.json({ success: true, data: savedCards }, { status: 201, headers });
   } catch (error: any) {
     return errorResponse(error);
   }

@@ -3,6 +3,7 @@ import connectDB from "../../../../../lib/db";
 import Topic from "../../../../../models/Topic";
 import Subject from "../../../../../models/Subject";
 import { withAuth, AuthenticatedRequest } from "../../../../../lib/middleware";
+import { CreateTopicSchema } from "../../../../../schemas/topic.schema";
 
 async function getTopics(req: AuthenticatedRequest, context: { params: Promise<{ id: string }> }) {
   try {
@@ -29,14 +30,23 @@ async function createTopic(req: AuthenticatedRequest, context: { params: Promise
     const { id } = await context.params;
     const subjectId = id;
     const body = await req.json();
-    const { title, notes } = body;
+    const validation = CreateTopicSchema.safeParse(body);
 
-    if (!title) {
+    if (!validation.success) {
       return NextResponse.json(
-        { success: false, error: { message: "Topic title is required", code: "VALIDATION_ERROR" } },
+        { 
+          success: false, 
+          error: { 
+            message: validation.error.issues[0].message, 
+            code: "VALIDATION_ERROR",
+            details: validation.error.issues
+          } 
+        },
         { status: 400 }
       );
     }
+
+    const { title, notes } = validation.data;
 
     // Verify subject belongs to user
     const subject = await Subject.findOne({ _id: subjectId, userId });

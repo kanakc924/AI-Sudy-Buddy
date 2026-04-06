@@ -93,13 +93,19 @@ export default function QuizSessionPage() {
       const durationSeconds = Math.round((Date.now() - startTime) / 1000)
       
       try {
+        const answers = userAnswers.map(ua => ({
+          questionId: ua.question._id,
+          isCorrect: ua.isCorrect
+        }))
+
         await logSession({ 
           type: 'quiz', 
           score: finalScore, 
           totalQuestions: questions.length, 
           correctAnswers: correctCount, 
           topicId,
-          duration: durationSeconds
+          duration: durationSeconds,
+          answers
         })
       } catch (e) {
         console.error("Failed to log session", e)

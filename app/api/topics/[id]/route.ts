@@ -6,6 +6,7 @@ import Flashcard from "../../../../models/Flashcard";
 import Quiz from "../../../../models/Quiz";
 import Session from "../../../../models/Session";
 import { withAuth, AuthenticatedRequest } from "../../../../lib/middleware";
+import { UpdateTopicSchema } from "../../../../schemas/topic.schema";
 import mongoose from "mongoose";
 
 async function getTopic(req: AuthenticatedRequest, context: { params: Promise<{ id: string }> }) {
@@ -30,7 +31,19 @@ async function getTopic(req: AuthenticatedRequest, context: { params: Promise<{ 
       );
     }
 
-    return NextResponse.json({ success: true, data: topic });
+    // Include counts for frontend logic
+    const [flashcardsCount, quizCount] = await Promise.all([
+      Flashcard.countDocuments({ topicId: id, userId }),
+      Quiz.countDocuments({ topicId: id, userId })
+    ]);
+
+    const topicData = {
+      ...topic.toObject(),
+      flashcardsCount,
+      quizCount
+    };
+
+    return NextResponse.json({ success: true, data: topicData });
   } catch (error: any) {
     console.error("Topic GET error:", error);
     return NextResponse.json(
@@ -46,10 +59,25 @@ async function updateTopic(req: AuthenticatedRequest, context: { params: Promise
     await connectDB();
     const userId = req.user.id;
     const body = await req.json();
+    const validation = UpdateTopicSchema.safeParse(body);
+
+    if (!validation.success) {
+      return NextResponse.json(
+        { 
+          success: false, 
+          error: { 
+            message: validation.error.issues[0].message, 
+            code: "VALIDATION_ERROR",
+            details: validation.error.issues
+          } 
+        },
+        { status: 400 }
+      );
+    }
 
     const topic = await Topic.findOneAndUpdate(
       { _id: id, userId },
-      { $set: body },
+      { $set: validation.data },
       { new: true, runValidators: true }
     );
 
@@ -86,9 +114,9 @@ async function deleteTopic(req: AuthenticatedRequest, context: { params: Promise
     }
 
     // Cascade delete related entities
-    await Flashcard.deleteMany({ topicId: id });
-    await Quiz.deleteMany({ topicId: id });
-    await Session.deleteMany({ topicId: id });
+    await Flashcard.deleteMany({ topicId: id, userId });
+    await Quiz.deleteMany({ topicId: id, userId });
+    await Session.deleteMany({ topicId: id, userId });
 
     return NextResponse.json({ success: true, data: {} });
   } catch (error: any) {

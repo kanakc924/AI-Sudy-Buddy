@@ -37,8 +37,14 @@ export async function POST(
     }
 
     // Check rate limit
-    const rateLimitResponse = await aiRateLimiter(req as any, decoded.id);
-    if (rateLimitResponse) return rateLimitResponse;
+    const { limitedResponse, limit, remaining, reset } = await aiRateLimiter(req as any, decoded.id);
+    if (limitedResponse) return limitedResponse;
+
+    const headers = {
+      "X-RateLimit-Limit": limit.toString(),
+      "X-RateLimit-Remaining": remaining.toString(),
+      "X-RateLimit-Reset": reset.toString(),
+    };
 
     // Get the image file
     const formData = await req.formData()
@@ -86,7 +92,7 @@ export async function POST(
       extractedText: text,
       imageUrl: uploadResult.url,
       data: updatedTopic
-    })
+    }, { headers })
 
   } catch (error: any) {
     return errorResponse(error)

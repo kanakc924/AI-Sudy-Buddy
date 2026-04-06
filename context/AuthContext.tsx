@@ -18,6 +18,7 @@ interface AuthContextType {
   token: string | null
   login: (token: string, user: User) => void
   logout: () => void
+  updateAiUsage: (total: number) => void
   loading: boolean
   checkAuth: () => Promise<void>
 }
@@ -28,6 +29,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [token, setToken] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
+
+  const updateAiUsage = (total: number) => {
+    if (user) {
+      setUser({ ...user, aiUsageToday: total })
+    }
+  }
 
   useEffect(() => {
     const stored = localStorage.getItem('study_buddy_token')
@@ -70,7 +77,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, token, login, logout, loading, checkAuth }}>
+    <AuthContext.Provider value={{ user, token, login, logout, updateAiUsage, loading, checkAuth }}>
       {children}
     </AuthContext.Provider>
   )

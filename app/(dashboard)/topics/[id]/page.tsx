@@ -9,6 +9,7 @@ import { useAuth } from '@/context/AuthContext'
 import { Brain, FileText, Sparkles, ChevronLeft, Loader2, AlertTriangle, Play, Save, BarChart3, Image as ImageIcon, MessageSquare, Plus, Trash2, Target, Upload, BookOpen } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { toast } from 'sonner'
+import { cn } from '@/lib/utils'
 import { updateNotes, generateFlashcards, generateQuiz, generateSummary, generateFromImage, getFlashcards, getQuizzes, updateFlashcard, deleteFlashcard, updateQuiz, deleteQuiz, deleteSourceMaterial } from '@/services/api'
 import { PdfUpload } from '@/components/pdf-upload'
 import { ImageUpload } from '@/components/image-upload'
@@ -22,11 +23,23 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Cell, Tooltip as RechartsTooltip } from 'recharts'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import ReactMarkdown from 'react-markdown'
 import { Flashcard, QuizQuestion } from '@/types'
 
+import { EmptyState } from '@/components/ui/empty-state'
+
 export default function TopicDetailPage() {
-  const { user } = useAuth()
+  const { user, updateAiUsage } = useAuth()
   const router = useRouter()
   const params = useParams()
   const topicId = params.id as string
@@ -64,6 +77,10 @@ export default function TopicDetailPage() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [materialToDelete, setMaterialToDelete] = useState<any>(null)
   const [isDeleting, setIsDeleting] = useState(false)
+
+  // Regeneration Confirmation
+  const [isRegenConfirmOpen, setIsRegenConfirmOpen] = useState(false)
+  const [regenType, setRegenType] = useState<'flashcards' | 'quiz' | 'summary' | null>(null)
 
   const appendExtractedText = (text: string, header: string, updatedTopic?: any) => {
     setExtractedText(prev => {
@@ -156,9 +173,15 @@ export default function TopicDetailPage() {
     
     setActiveGen(type)
     try {
-      if (type === 'flashcards') await generateFlashcards(topicId, replace)
-      if (type === 'quiz') await generateQuiz(topicId, replace)
-      if (type === 'summary') await generateSummary(topicId)
+      let res
+      if (type === 'flashcards') res = await generateFlashcards(topicId, replace)
+      else if (type === 'quiz') res = await generateQuiz(topicId, replace)
+      else if (type === 'summary') res = await generateSummary(topicId)
+      
+      // Update global AI usage in sidebar instantly via headers
+      if (res?._usage) {
+        updateAiUsage(res._usage.limit - res._usage.remaining)
+      }
       
       toast.success(`${type.charAt(0).toUpperCase() + type.slice(1)} generated successfully!`, { icon: '✅' })
       router.push(`/topics/${topicId}/${type === 'summary' ? 'summary' : type === 'flashcards' ? 'flashcards' : 'quiz'}`)
@@ -238,7 +261,13 @@ export default function TopicDetailPage() {
 
     setActiveGen(`image-${type}`)
     try {
-      await generateFromImage(topicId, type, file)
+      const res = await generateFromImage(topicId, type, file)
+      
+      // Update global AI usage in sidebar instantly
+      if (res?._usage) {
+        updateAiUsage(res._usage.limit - res._usage.remaining)
+      }
+      
       toast.success(`${type === 'flashcard' ? 'Flashcards' : 'Quiz'} generated from image!`, { icon: '🖼️' })
       router.push(`/topics/${topicId}/${type === 'flashcard' ? 'flashcards' : 'quiz'}`)
     } catch (err: any) {
@@ -417,12 +446,12 @@ export default function TopicDetailPage() {
         <TabsContent value="upload" className="outline-none">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
             {/* Document Upload */}
-            <div className="glass-card rounded-xl p-6 flex flex-col items-center text-center gap-4 border-border hover:-translate-y-1 transition-transform h-full">
-              <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-primary/10 border border-primary/20">
+            <div className="glass-card rounded-xl p-6 flex flex-col items-center text-center gap-4 border-border group cursor-pointer hover:border-primary/50 hover:bg-primary/5 transition-all duration-200 h-full">
+              <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-primary/10 border border-primary/20 group-hover:scale-110 group-hover:bg-primary/20 transition-all duration-200">
                 <FileText className="w-6 h-6 text-primary" />
               </div>
               <div>
-                <h2 className="font-serif text-xl mb-1">Document Upload</h2>
+                <h2 className="font-serif text-xl mb-1 group-hover:text-primary transition-colors duration-200">Document Upload</h2>
                 <p className="text-xs text-muted-foreground px-2">Click or drag PDF / TXT to upload and extract text.</p>
               </div>
               <div className="w-full mt-auto">
@@ -433,12 +462,12 @@ export default function TopicDetailPage() {
             </div>
 
             {/* Image Extraction */}
-            <div className="glass-card rounded-xl p-6 flex flex-col items-center text-center gap-4 border-border hover:-translate-y-1 transition-transform h-full">
-              <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-blue-500/10 border border-blue-500/20">
+            <div className="glass-card rounded-xl p-6 flex flex-col items-center text-center gap-4 border-border group cursor-pointer hover:border-blue-500/50 hover:bg-blue-500/5 transition-all duration-200 h-full">
+              <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-blue-500/10 border border-blue-500/20 group-hover:scale-110 group-hover:bg-blue-500/20 transition-all duration-200">
                 <ImageIcon className="w-6 h-6 text-blue-500" />
               </div>
               <div>
-                <h2 className="font-serif text-xl mb-1">Image Extraction</h2>
+                <h2 className="font-serif text-xl mb-1 group-hover:text-blue-500 transition-colors duration-200">Image Extraction</h2>
                 <p className="text-xs text-muted-foreground px-2">Upload textbook photos to instantly convert to text.</p>
               </div>
               <div className="w-full mt-auto">
@@ -449,12 +478,12 @@ export default function TopicDetailPage() {
             </div>
 
             {/* Diagram Explainer */}
-            <div className="glass-card rounded-xl p-6 flex flex-col items-center text-center gap-4 border-border hover:-translate-y-1 transition-transform h-full">
-              <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-[#4CAF50]/10 border border-[#4CAF50]/20">
+            <div className="glass-card rounded-xl p-6 flex flex-col items-center text-center gap-4 border-border group cursor-pointer hover:border-[#4CAF50]/50 hover:bg-[#4CAF50]/5 transition-all duration-200 h-full">
+              <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-[#4CAF50]/10 border border-[#4CAF50]/20 group-hover:scale-110 group-hover:bg-[#4CAF50]/20 transition-all duration-200">
                 <Upload className="w-6 h-6 text-[#4CAF50]" />
               </div>
               <div>
-                <h2 className="font-serif text-xl mb-1">Explain a Diagram</h2>
+                <h2 className="font-serif text-xl mb-1 group-hover:text-[#4CAF50] transition-colors duration-200">Explain a Diagram</h2>
                 <p className="text-xs text-muted-foreground px-2">Upload a flowchart or chart — AI generates a step-by-step walkthrough.</p>
               </div>
               <div className="w-full mt-auto">
@@ -509,8 +538,15 @@ export default function TopicDetailPage() {
               { id: 'quiz', title: 'Quiz', icon: Brain, color: 'text-blue-500', bg: 'bg-blue-500/10', border: 'border-blue-500/20', desc: 'Test your understanding with questions' },
               { id: 'summary', title: 'Summary', icon: FileText, color: 'text-[#4CAF50]', bg: 'bg-[#4CAF50]/10', border: 'border-[#4CAF50]/20', desc: 'Get a clean markdown summary' }
             ].map(card => (
-              <div key={card.id} className={`glass-card rounded-xl p-6 flex flex-col gap-4 border-border transition-all duration-300 hover:-translate-y-1 hover:shadow-lg ${rateLimited ? 'border-amber-500/50 shadow-[0_0_15px_rgba(245,158,11,0.1)]' : ''}`}>
-                <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${card.bg} ${card.border} border`}>
+              <div key={card.id} className={cn(
+                "glass-card rounded-xl p-6 flex flex-col gap-4 border-border transition-all duration-300 cursor-pointer",
+                "hover:border-primary/40 hover:shadow-[0_8px_32px_rgba(124,92,252,0.2)] hover:-translate-y-1",
+                rateLimited ? 'border-amber-500/50 shadow-[0_0_15px_rgba(245,158,11,0.1)]' : ''
+              )}>
+                <div className={cn(
+                  "w-12 h-12 rounded-xl flex items-center justify-center border transition-all duration-200",
+                  card.bg, card.border
+                )}>
                   <card.icon className={`w-6 h-6 ${card.color}`} />
                 </div>
                 <div>
@@ -528,7 +564,13 @@ export default function TopicDetailPage() {
                         (card.id === 'flashcards' && topic?.flashcardsCount > 0) || 
                         (card.id === 'quiz' && topic?.quizCount > 0) ||
                         (card.id === 'summary' && topic?.summary);
-                      handleGenerate(card.id as any, hasExisting);
+                      
+                      if (hasExisting) {
+                        setRegenType(card.id as any);
+                        setIsRegenConfirmOpen(true);
+                      } else {
+                        handleGenerate(card.id as any, false);
+                      }
                     }}
                   >
                     {activeGen === card.id ? <Loader2 className="w-4 h-4 animate-spin" /> : 
@@ -697,11 +739,16 @@ export default function TopicDetailPage() {
                   })}
               </div>
             ) : (
-              <div className="p-12 text-center text-muted-foreground border-2 border-dashed border-border/50 rounded-3xl bg-muted/5">
-                <FileText className="w-12 h-12 mx-auto mb-4 opacity-20" />
-                <p className="text-lg font-serif">Your library is empty</p>
-                <p className="text-sm mt-1 opacity-70">Upload sources or formalize notes to build your study library.</p>
-              </div>
+              <EmptyState 
+                icon={FileText}
+                title="Your library is empty"
+                description="Upload sources like PDFs or images to build your study library. This helps the AI generate more accurate content."
+                actionLabel="Upload Material"
+                onAction={() => {
+                  const uploadTab = document.querySelector('[value="upload"]') as HTMLElement;
+                  uploadTab?.click();
+                }}
+              />
             )}
           </CardContent>
         </Card>
@@ -796,6 +843,30 @@ export default function TopicDetailPage() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Regeneration Confirmation */}
+      <AlertDialog open={isRegenConfirmOpen} onOpenChange={setIsRegenConfirmOpen}>
+        <AlertDialogContent className="bg-[#252833] border-border text-white">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="font-serif text-xl">Overwriting Existing Content?</AlertDialogTitle>
+            <AlertDialogDescription className="text-[#A0A6B8]">
+              You already have {regenType} for this topic. Regenerating will permanently overwrite them with new AI-generated versions. This cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="bg-transparent border-border hover:bg-white/5 text-[#A0A6B8] rounded-xl">Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={() => {
+                if (regenType) handleGenerate(regenType, true);
+                setIsRegenConfirmOpen(false);
+              }}
+              className="bg-primary hover:bg-primary/90 text-primary-foreground font-bold rounded-xl"
+            >
+              Confirm Regenerate
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <hr className="border-t border-border/30 my-8" />
 

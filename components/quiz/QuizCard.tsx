@@ -80,9 +80,9 @@ export function QuizCard({
               onClick={() => handleSelect(option)}
               disabled={hasAnswered}
               className={cn(
-                "w-full p-4 rounded-lg border text-left transition-all",
+                "w-full p-4 rounded-lg border text-left transition-all duration-200",
                 "flex items-center gap-3",
-                !hasAnswered && "hover:border-primary/50 hover:bg-primary/5 cursor-pointer",
+                !hasAnswered && "hover:border-primary/40 hover:bg-primary/5 hover:translate-x-1 cursor-pointer shadow-sm",
                 !hasAnswered && !isSelected && "border-border/50 bg-card",
                 showCorrect && "border-green-500 bg-green-500/10",
                 showIncorrect && "border-red-500 bg-red-500/10",
@@ -90,7 +90,7 @@ export function QuizCard({
               )}
             >
               <span className={cn(
-                "flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium",
+                "shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium",
                 !hasAnswered && "bg-muted text-muted-foreground",
                 showCorrect && "bg-green-500 text-white",
                 showIncorrect && "bg-red-500 text-white",

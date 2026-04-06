@@ -46,7 +46,7 @@ export function Navbar({ onMenuClick }: NavbarProps) {
         <ThemeToggle />
         <button 
           onClick={() => setDropdownOpen(!dropdownOpen)}
-          className="flex items-center gap-2 hover:bg-surface2 p-1.5 rounded-lg transition-colors"
+          className="flex items-center gap-2 hover:bg-primary/10 p-1.5 rounded-lg transition-all duration-200"
         >
           <div className="w-8 h-8 rounded-full bg-surface2 border border-border flex items-center justify-center text-sm font-bold">
             {user?.name?.charAt(0).toUpperCase() || "U"}
@@ -56,7 +56,7 @@ export function Navbar({ onMenuClick }: NavbarProps) {
         {dropdownOpen && (
           <>
             <div className="fixed inset-0 z-40" onClick={() => setDropdownOpen(false)} />
-            <div className="absolute right-0 mt-3 w-80 bg-[#252833] border border-[#323645] rounded-3xl shadow-2xl z-50 animate-in fade-in zoom-in-95 duration-200 overflow-hidden">
+            <div className="absolute right-0 top-full mt-2 w-60 bg-[#252833] border border-[#323645] rounded-3xl shadow-2xl z-50 animate-in fade-in zoom-in-95 duration-200 overflow-hidden">
               {/* Header Section */}
               <div className="p-6 flex flex-col items-center text-center space-y-3">
                 <div className="w-20 h-20 rounded-full bg-primary flex items-center justify-center text-3xl font-bold text-primary-foreground shadow-lg shadow-primary/20">
@@ -67,13 +67,12 @@ export function Navbar({ onMenuClick }: NavbarProps) {
                   <p className="text-sm text-muted-foreground">{user?.email}</p>
                 </div>
                 
-                {/* Manage Account Pill Button */}
                 <button 
                   onClick={() => {
                     router.push('/settings');
                     setDropdownOpen(false);
                   }}
-                  className="mt-4 px-6 py-2 rounded-full border border-[#323645] text-sm font-medium text-white hover:bg-[#323645] hover:border-[#8F8DF2]/50 transition-all active:scale-95"
+                  className="mt-4 px-6 py-2 rounded-full border border-[#323645] text-sm font-medium text-white hover:bg-primary hover:border-primary hover:shadow-[0_0_15px_rgba(124,92,252,0.3)] transition-all duration-200 active:scale-95"
                 >
                   Manage Account
                 </button>
@@ -83,9 +82,9 @@ export function Navbar({ onMenuClick }: NavbarProps) {
               <div className="border-t border-[#323645] p-2 bg-[#1C1E26]/50">
                 <button 
                   onClick={logout}
-                  className="w-full flex items-center justify-center gap-3 px-4 py-3 rounded-2xl text-sm font-medium text-red-400 hover:bg-red-400/10 transition-colors group"
+                  className="w-full flex items-center justify-center gap-3 px-4 py-3 rounded-2xl text-sm font-medium text-red-400 hover:bg-red-400/10 transition-colors duration-200 group"
                 >
-                  <div className="p-2 rounded-lg bg-red-400/10 group-hover:bg-red-400/20 transition-colors">
+                  <div className="p-2 rounded-lg bg-red-400/10 group-hover:bg-red-400/20 transition-colors duration-200">
                     <LogOut size={18} />
                   </div>
                   Sign out

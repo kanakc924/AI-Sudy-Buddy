@@ -78,6 +78,11 @@
   body { @apply bg-background text-foreground font-sans antialiased selection:bg-primary/20; }
 }
 
+/* Global Transitions */
+button, a, [role="button"], input, textarea, select {
+  transition: all 0.2s ease;
+}
+
 /* Noise texture */
 .noise-bg::before {
   content: '';

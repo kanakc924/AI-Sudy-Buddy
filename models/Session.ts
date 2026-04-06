@@ -7,6 +7,10 @@ export interface ISession extends Document {
   score: number; // percentage, 0-100
   totalQuestions: number;
   correctAnswers: number;
+  answers: Array<{
+    questionId: string;
+    isCorrect: boolean;
+  }>;
   duration: number; // in seconds
   completedAt: Date;
 }
@@ -18,6 +22,12 @@ const sessionSchema = new Schema<ISession>({
   score: { type: Number, required: true, min: 0, max: 100 },
   totalQuestions: { type: Number, required: true },
   correctAnswers: { type: Number, required: true },
+  answers: [
+    {
+      questionId: { type: String, required: true },
+      isCorrect: { type: Boolean, required: true },
+    },
+  ],
   duration: { type: Number, default: 0 },
   completedAt: { type: Date, default: Date.now },
 });
