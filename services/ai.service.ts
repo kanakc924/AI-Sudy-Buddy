@@ -98,6 +98,7 @@ export async function generateFlashcards(
       schema: FlashcardOutputSchema,
       prompt: `You are an expert tutor. Generate exactly ${count} flashcards 
 from these study notes. Each flashcard should test one specific concept.
+Return the output in JSON format.
 
 Notes:
 ${notes}`,
@@ -118,6 +119,7 @@ export async function generateQuiz(
       prompt: `You are an expert tutor. Generate exactly ${count} multiple-choice 
 questions from these study notes. Make the wrong options plausible but 
 clearly incorrect to someone who studied the material.
+Return the output in JSON format.
 
 Notes:
 ${notes}`,
@@ -210,7 +212,8 @@ export async function generateFlashcardsFromImage(
               type: 'text',
               text: `You are an expert tutor. Look at this image of study material 
 and generate exactly ${count} flashcards based on the content you see. 
-Each flashcard should test one specific concept from the image.`,
+Each flashcard should test one specific concept from the image.
+Return the output in JSON format.`,
             },
             {
               type: 'image',
@@ -244,7 +247,8 @@ export async function generateQuizFromImage(
             {
               type: 'text',
               text: `Look at this image of study material and generate exactly ${count} 
-multiple-choice questions based on what you see.`,
+multiple-choice questions based on what you see.
+Return the output in JSON format.`,
             },
             {
               type: 'image',
