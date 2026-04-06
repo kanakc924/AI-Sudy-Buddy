@@ -60,15 +60,16 @@ export default function DashboardPage() {
   const stats = [
     { label: 'Total Subjects', value: data?.totalSubjects || 0, icon: BookOpen, colorClass: 'border-primary bg-primary/10 text-primary' },
     { label: 'Study Sessions', value: data?.totalSessions || 0, icon: Brain, colorClass: 'border-primary bg-primary/10 text-primary' },
-    { label: 'Avg Score', value: `${data?.averageQuizScore || 0}%`, icon: Target, colorClass: 'border-[#4CAF50] bg-[#4CAF50]/10 text-[#4CAF50]' },
+    { label: 'Avg Score', value: `${data?.averageScore || 0}%`, icon: Target, colorClass: 'border-[#4CAF50] bg-[#4CAF50]/10 text-[#4CAF50]' },
     { label: 'Study Streak', value: `${data?.currentStreak || 0} Days`, icon: Flame, colorClass: 'border-gold bg-gold/10 text-gold', subtext: 'Keep it going!' },
   ]
 
-  // Mock data for charts if API doesn't return it
-  const scoreTrend = data?.scoreTrend || [
-    { date: 'Mon', score: 65 }, { date: 'Tue', score: 70 }, { date: 'Wed', score: 68 },
-    { date: 'Thu', score: 85 }, { date: 'Fri', score: 82 }, { date: 'Sat', score: 90 }, { date: 'Sun', score: 95 }
-  ]
+  // Mock data for charts ONLY if the user has never completed a session
+  const scoreTrend = (data?.scoreTrend && data.scoreTrend.length > 0) ? data.scoreTrend : 
+    (data?.totalSessions > 0 ? [] : [
+      { date: 'Mon', score: 65 }, { date: 'Tue', score: 70 }, { date: 'Wed', score: 68 },
+      { date: 'Thu', score: 85 }, { date: 'Fri', score: 82 }, { date: 'Sat', score: 90 }, { date: 'Sun', score: 95 }
+    ]);
 
   // Generate 12 weeks * 7 days heatmap mock if missing
   const heatmapData = Array.isArray(data?.activityHeatmap) && data.activityHeatmap.length > 0 

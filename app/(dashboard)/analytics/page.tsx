@@ -98,7 +98,7 @@ export default function AnalyticsPage() {
           </div>
           <div>
             <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">Avg. Mastery</p>
-            <h3 className="text-2xl font-bold">{data?.averageQuizScore || 0}%</h3>
+            <h3 className="text-2xl font-bold">{data?.averageScore || 0}%</h3>
           </div>
           <div className="ml-auto flex items-center text-xs font-bold text-[#4CAF50]">
             <ArrowUpRight className="w-3 h-3 mr-1" /> Best

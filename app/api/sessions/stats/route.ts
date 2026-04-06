@@ -32,14 +32,11 @@ async function getStats(req: AuthenticatedRequest) {
     const totalSessions = await Session.countDocuments({ userId });
 
     const sessionsForBasicStats = await Session.find({ userId });
-    let averageQuizScore = 0;
+    let averageScore = 0;
 
     if (sessionsForBasicStats.length > 0) {
-      const quizSessions = sessionsForBasicStats.filter(s => s.type === 'quiz');
-      if (quizSessions.length > 0) {
-        const totalScore = quizSessions.reduce((acc, curr) => acc + curr.score, 0);
-        averageQuizScore = Math.round(totalScore / quizSessions.length);
-      }
+      const totalScore = sessionsForBasicStats.reduce((acc, curr) => acc + curr.score, 0);
+      averageScore = Math.round(totalScore / sessionsForBasicStats.length);
     }
 
     const sessions = await Session.find({ userId }).sort({ completedAt: 1 }).select("completedAt score type");
@@ -47,12 +44,12 @@ async function getStats(req: AuthenticatedRequest) {
     // Score Trend
     const last7Days = new Date();
     last7Days.setDate(last7Days.getDate() - 7);
-    const recentQuizSessions = sessions.filter(
-      (s: any) => s.type === 'quiz' && new Date(s.completedAt) > last7Days
+    const recentTrendSessions = sessions.filter(
+      (s: any) => new Date(s.completedAt) > last7Days
     );
     const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
     const scoreTrendMap: Record<string, { total: number, count: number }> = {};
-    recentQuizSessions.forEach((s: any) => {
+    recentTrendSessions.forEach((s: any) => {
       const day = days[new Date(s.completedAt).getDay()];
       if (!scoreTrendMap[day]) scoreTrendMap[day] = { total: 0, count: 0 };
       scoreTrendMap[day].total += s.score;
@@ -167,7 +164,7 @@ async function getStats(req: AuthenticatedRequest) {
         totalSubjects,
         totalTopics,
         totalSessions,
-        averageQuizScore,
+        averageScore,
         todaySessionCount,
         aiUsage: { count: aiUsageCount, max: 200 },
         topicProgress: {
