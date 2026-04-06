@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { useParams, useRouter } from 'next/navigation'
+import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -42,7 +42,9 @@ export default function TopicDetailPage() {
   const { user, updateAiUsage } = useAuth()
   const router = useRouter()
   const params = useParams()
+  const searchParams = useSearchParams()
   const topicId = params.id as string
+  const defaultTab = searchParams.get('tab') || 'notes'
 
   const [topic, setTopic] = useState<any>(null)
   const [notes, setNotes] = useState('')
@@ -411,7 +413,7 @@ export default function TopicDetailPage() {
 
 
       <div className="pt-8 space-y-8">
-        <Tabs defaultValue="notes" className="w-full">
+        <Tabs defaultValue={defaultTab} className="w-full">
         <TabsList className="grid w-full grid-cols-3 h-14 bg-card rounded-xl border border-border/50 p-1 mb-6 shadow-sm">
           <TabsTrigger value="notes" className="rounded-lg data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-sm font-medium">Notes</TabsTrigger>
           <TabsTrigger value="upload" className="rounded-lg data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-sm font-medium">Upload</TabsTrigger>
@@ -730,9 +732,8 @@ export default function TopicDetailPage() {
                           Saved: {new Date(mat.uploadedAt).toLocaleDateString()}
                         </p>
                         
-                        <div className="mt-4 pt-4 border-t border-border/10 flex items-center justify-between opacity-0 group-hover:opacity-100 transition-opacity">
+                        <div className="mt-4 pt-4 border-t border-border/10 flex items-center opacity-0 group-hover:opacity-100 transition-opacity">
                           <span className="text-[10px] font-bold text-[#8F8DF2] uppercase tracking-tighter">Click to View</span>
-                          <Play className="w-3 h-3 text-[#8F8DF2]" />
                         </div>
                       </motion.div>
                     );
@@ -743,11 +744,6 @@ export default function TopicDetailPage() {
                 icon={FileText}
                 title="Your library is empty"
                 description="Upload sources like PDFs or images to build your study library. This helps the AI generate more accurate content."
-                actionLabel="Upload Material"
-                onAction={() => {
-                  const uploadTab = document.querySelector('[value="upload"]') as HTMLElement;
-                  uploadTab?.click();
-                }}
               />
             )}
           </CardContent>

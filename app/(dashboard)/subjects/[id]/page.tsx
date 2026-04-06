@@ -13,7 +13,7 @@ import Link from 'next/link'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog'
 import { toast } from 'sonner'
-import { ChevronLeft, ChevronRight, Bell, Calendar, BarChart3, Clock, Play, Award } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Bell, Calendar, BarChart3, Play, Award } from 'lucide-react'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Progress } from '@/components/ui/progress'
 import { useAuth } from '@/context/AuthContext'
@@ -149,17 +149,12 @@ export default function TopicsPage() {
       </div>
 
       {/* Subject Stats Bar */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 w-full mb-8">
         {(() => {
           const totalMastery = sessions.length > 0 
             ? Math.round(sessions.reduce((acc, s) => acc + s.score, 0) / sessions.length) 
             : 0;
           
-          const totalSeconds = sessions.reduce((acc, s) => acc + (s.duration || 0), 0);
-          const totalHours = Math.floor(totalSeconds / 3600);
-          const totalMinutes = Math.floor((totalSeconds % 3600) / 60);
-          const timeDisplay = totalHours > 0 ? `${totalHours}h ${totalMinutes}m` : `${totalMinutes}m`;
-
           let lastActivity = 'None';
           if (sessions.length > 0) {
             const latestDate = new Date(sessions[0].completedAt);
@@ -173,18 +168,22 @@ export default function TopicsPage() {
           return [
             { label: 'Total Topics', value: topics.length, icon: BookOpen, color: 'text-primary', bg: 'bg-primary/10' },
             { label: 'Mastery', value: `${totalMastery}%`, icon: Award, color: 'text-mint', bg: 'bg-mint/10' },
-            { label: 'Study Time', value: topics.length === 0 ? '0h' : timeDisplay, icon: Clock, color: 'text-blue', bg: 'bg-blue/10' },
             { label: 'Last Activity', value: lastActivity, icon: Calendar, color: 'text-pink', bg: 'bg-pink/10' },
           ].map((stat, i) => (
-            <Card key={i} className="border-border bg-card rounded-2xl p-4 shadow-sm flex items-center gap-3">
-              <div className={`w-10 h-10 rounded-xl ${stat.bg} flex items-center justify-center`}>
-                <stat.icon className={`w-5 h-5 ${stat.color}`} />
+            <div 
+              key={i} 
+              className="glass-card rounded-2xl p-6 flex flex-col items-center justify-center gap-2 w-full min-h-[140px] border border-border/50 hover:border-primary/40 hover:shadow-[0_8px_32px_rgba(124,92,252,0.15)] hover:-translate-y-1 transition-all duration-200 shadow-sm bg-card"
+            >
+              <div className={`w-12 h-12 rounded-xl ${stat.bg} flex items-center justify-center mb-1`}>
+                <stat.icon className={`w-6 h-6 ${stat.color}`} />
               </div>
-              <div>
-                <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">{stat.label}</p>
-                <h3 className="text-lg font-bold">{stat.value}</h3>
-              </div>
-            </Card>
+              <p className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold">
+                {stat.label}
+              </p>
+              <p className="text-3xl font-serif font-bold text-foreground">
+                {stat.value}
+              </p>
+            </div>
           ));
         })()}
       </div>

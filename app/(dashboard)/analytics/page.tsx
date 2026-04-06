@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { 
   ChevronLeft, Bell, TrendingUp, Target, Award, Brain, 
   ArrowUpRight, ArrowDownRight, Zap, CheckCircle2, 
-  Calendar, PieChart, BarChart3, Clock
+  Calendar, PieChart, BarChart3
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
@@ -257,7 +257,6 @@ export default function AnalyticsPage() {
 
               <div className="mt-8 grid grid-cols-2 md:grid-cols-4 gap-4">
                 {[
-                  { label: 'Study Time', value: '32h', icon: Clock, color: 'text-blue' },
                   { label: 'Quiz Avg.', value: '82%', icon: CheckCircle2, color: 'text-mint' },
                   { label: 'Energy', value: 'High', icon: Zap, color: 'text-primary' },
                   { label: 'Consistency', value: '95%', icon: Calendar, color: 'text-pink' },

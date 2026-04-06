@@ -312,11 +312,11 @@ The AI model receives the image as a base64 data URI in the `messages` array alo
 
 ### Step 7 — Text Sanitization (Two-Pass Approach)
 
-OCR and AI vision often produce merged words (e.g., `"Theconceptofpolymorphism"`) and broken line continuations. The sanitizer runs two passes:
+OCR and AI vision often produce merged words (e.g., `"Theconceptofpolymorphism"`) and broken line continuations. The AI service runs two passes:
 
 **Pass 1 — Regex pre-processing:**
 ```typescript
-// services/sanitizer.service.ts
+// services/ai.service.ts
 let processedText = rawText.replace(/([^.!?:])\\n([a-z\\s])/g, '$1 $2');
 // If a line doesn't end in sentence-ending punctuation AND the next line
 // starts with a lowercase letter, the newline was a false line break.

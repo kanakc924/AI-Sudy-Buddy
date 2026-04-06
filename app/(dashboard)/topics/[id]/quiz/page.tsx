@@ -232,7 +232,7 @@ export default function QuizSessionPage() {
           <Button 
             className="flex-1 h-14 rounded-xl text-lg font-medium border-border hover:bg-card" 
             variant="outline"
-            onClick={() => router.push(`/topics/${topicId}`)}
+            onClick={() => router.push(`/topics/${topicId}?tab=generate`)}
           >
             <ArrowLeft className="w-5 h-5 mr-2" /> Back to Topic
           </Button>
@@ -260,11 +260,12 @@ export default function QuizSessionPage() {
   return (
     <div className="max-w-3xl mx-auto px-4 py-6 md:py-12 flex flex-col h-full">
       <div className="flex items-center justify-between mb-8">
-        <Link href={`/topics/${topicId}`}>
-          <Button variant="ghost" size="icon" className="rounded-full hover:bg-card border border-border/50 shadow-sm shrink-0">
-            <ArrowLeft className="w-4 h-4 text-muted-foreground" />
-          </Button>
-        </Link>
+        <button
+          onClick={() => router.push(`/topics/${topicId}?tab=generate`)}
+          className="flex items-center justify-center w-10 h-10 rounded-full hover:bg-primary/10 hover:text-primary transition-all duration-200 border border-border/50 shadow-sm shrink-0"
+        >
+          <ArrowLeft className="w-5 h-5 text-muted-foreground" />
+        </button>
         <div className="flex-1 px-6">
           <Progress value={((currentIndex) / questions.length) * 100} className="h-2 [&>div]:bg-primary rounded-full bg-card shadow-inner" />
         </div>
