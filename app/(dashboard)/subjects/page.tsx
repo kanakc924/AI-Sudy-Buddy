@@ -6,7 +6,8 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { BookOpen, Pencil, Trash2, ArrowRight, Plus, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { getSubjects, createSubject, updateSubject, deleteSubject } from '@/services/api'
+import { createSubject, updateSubject, deleteSubject } from '@/services/api'
+import { useSubjects } from '@/context/SubjectContext'
 import { LoadingSkeleton } from '@/components/loading-skeleton'
 import { EmptyState } from '@/components/empty-state'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog'
@@ -20,8 +21,7 @@ const SUBJECT_COLORS = [
 
 export default function SubjectsPage() {
   const router = useRouter()
-  const [subjects, setSubjects] = useState<any[]>([])
-  const [loading, setLoading] = useState(true)
+  const { subjects, loading, refreshSubjects } = useSubjects()
 
   // Dialog State
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -33,18 +33,6 @@ export default function SubjectsPage() {
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
-
-  const fetchSubjects = () => {
-    setLoading(true)
-    getSubjects()
-      .then(res => setSubjects(res.data))
-      .catch(() => toast.error('Failed to load subjects'))
-      .finally(() => setLoading(false))
-  }
-
-  useEffect(() => {
-    fetchSubjects()
-  }, [])
 
   const openCreate = () => {
     setEditingSubject(null)
@@ -79,7 +67,7 @@ export default function SubjectsPage() {
         toast.success('Subject created')
       }
       setIsModalOpen(false)
-      fetchSubjects()
+      await refreshSubjects()
     } catch (err: any) {
       toast.error(err.message || 'Failed to save subject')
     } finally {
@@ -94,7 +82,7 @@ export default function SubjectsPage() {
       await deleteSubject(deletingSubjectId)
       toast.success('Subject deleted')
       setIsDeleteDialogOpen(false)
-      fetchSubjects()
+      await refreshSubjects()
     } catch (err: any) {
       toast.error(err.message || 'Failed to delete')
     } finally {

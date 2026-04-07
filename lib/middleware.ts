@@ -18,9 +18,8 @@ export function withAuth(
 ) {
   return async (req: NextRequest, ...args: any[]) => {
     try {
-      let token = req.cookies.get("study_buddy_token")?.value;
-      
-      // Fallback for Authorization header (if needed for API testing/external clients)
+      let token: string | undefined = req.cookies.get("study_buddy_token")?.value;
+
       if (!token) {
         const authHeader = req.headers.get("authorization");
         if (authHeader && authHeader.startsWith("Bearer ")) {

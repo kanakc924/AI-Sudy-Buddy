@@ -5,8 +5,9 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { Brain, LayoutDashboard, Settings, Plus, Flame, LogOut, ArrowRight, BookOpen, ChevronDown } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { getSubjects, getStreak } from '@/services/api'
+import { getStreak } from '@/services/api'
 import { useAuth } from '@/hooks/useAuth'
+import { useSubjects } from '@/context/SubjectContext'
 import { cn } from '@/lib/utils'
 
 
@@ -19,12 +20,11 @@ export function AppSidebar() {
   const pathname = usePathname()
   const router = useRouter()
   const { logout } = useAuth()
-  const [subjects, setSubjects] = useState<any[]>([])
+  const { subjects } = useSubjects()
   const [streak, setStreak] = useState(0)
   const [isSubjectsExpanded, setIsSubjectsExpanded] = useState(true)
 
   useEffect(() => {
-    getSubjects().then(res => setSubjects(res.data)).catch(() => {})
     getStreak().then(res => setStreak(res.data?.currentStreak || 0)).catch(() => {})
   }, [])
 
