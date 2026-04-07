@@ -394,7 +394,7 @@ export default function TopicDetailPage() {
       {/* Header */}
       <div className="flex items-center justify-between border-b border-border/50 pb-6">
         <div className="flex items-center gap-4">
-          <Button variant="outline" size="icon" onClick={() => router.back()} className="rounded-xl border-border bg-card">
+          <Button variant="outline" size="icon" onClick={() => router.push(topic?.subjectId?._id ? `/subjects/${topic.subjectId._id}` : (topic?.subjectId ? `/subjects/${topic.subjectId}` : '/dashboard'))} className="rounded-xl border-border bg-card">
             <ChevronLeft className="w-5 h-5" />
           </Button>
           <div>
