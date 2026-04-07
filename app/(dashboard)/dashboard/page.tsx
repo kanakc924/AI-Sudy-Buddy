@@ -11,6 +11,7 @@ import { Progress } from '@/components/ui/progress'
 import { AreaChart, Area, XAxis, YAxis, Tooltip as RechartsTooltip, ResponsiveContainer } from 'recharts'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { Button } from '@/components/ui/button'
+import { cn } from '@/lib/utils'
 
 import { LoadingSkeleton } from '@/components/loading-skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
@@ -65,11 +66,7 @@ export default function DashboardPage() {
   ]
 
   // Mock data for charts ONLY if the user has never completed a session
-  const scoreTrend = (data?.scoreTrend && data.scoreTrend.length > 0) ? data.scoreTrend : 
-    (data?.totalSessions > 0 ? [] : [
-      { date: 'Mon', score: 65 }, { date: 'Tue', score: 70 }, { date: 'Wed', score: 68 },
-      { date: 'Thu', score: 85 }, { date: 'Fri', score: 82 }, { date: 'Sat', score: 90 }, { date: 'Sun', score: 95 }
-    ]);
+  const scoreTrend = (data?.scoreTrend && data.scoreTrend.length > 0) ? data.scoreTrend : [];
 
   // Generate 12 weeks * 7 days heatmap mock if missing
   const heatmapData = Array.isArray(data?.activityHeatmap) && data.activityHeatmap.length > 0 
@@ -227,48 +224,56 @@ export default function DashboardPage() {
                 Performance Trend
               </CardTitle>
             </CardHeader>
-            <CardContent className="p-6 h-[280px] w-full">
+            <CardContent className={cn("p-6 h-[280px] w-full flex items-center justify-center", scoreTrend.length === 0 && "bg-muted/5")}>
               {isMounted ? (
-                <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={scoreTrend} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                    <defs>
-                      <linearGradient id="colorScore" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="var(--primary)" stopOpacity={0.2} />
-                        <stop offset="95%" stopColor="var(--primary)" stopOpacity={0} />
-                      </linearGradient>
-                    </defs>
-                    <XAxis 
-                      dataKey="date" 
-                      stroke="var(--muted-foreground)" 
-                      fontSize={11} 
-                      tickLine={false} 
-                      axisLine={false} 
-                      tick={{ fill: 'var(--muted-foreground)', fontWeight: 600 }}
-                    />
-                    <YAxis 
-                      stroke="var(--muted-foreground)" 
-                      fontSize={11} 
-                      tickLine={false} 
-                      axisLine={false} 
-                      domain={[0, 100]} 
-                      tick={{ fill: 'var(--muted-foreground)', fontWeight: 600 }}
-                    />
-                    <RechartsTooltip 
-                      contentStyle={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', borderRadius: '12px', fontSize: '12px', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }}
-                      itemStyle={{ color: 'var(--primary)', fontWeight: 'bold' }}
-                      cursor={{ stroke: 'var(--primary)', strokeWidth: 1, strokeDasharray: '4 4' }}
-                    />
-                    <Area 
-                      type="monotone" 
-                      dataKey="score" 
-                      stroke="var(--primary)" 
-                      strokeWidth={3} 
-                      fillOpacity={1} 
-                      fill="url(#colorScore)" 
-                      animationDuration={1500}
-                    />
-                  </AreaChart>
-                </ResponsiveContainer>
+                scoreTrend.length > 0 ? (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={scoreTrend} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                      <defs>
+                        <linearGradient id="colorScore" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="var(--primary)" stopOpacity={0.2} />
+                          <stop offset="95%" stopColor="var(--primary)" stopOpacity={0} />
+                        </linearGradient>
+                      </defs>
+                      <XAxis 
+                        dataKey="date" 
+                        stroke="var(--muted-foreground)" 
+                        fontSize={11} 
+                        tickLine={false} 
+                        axisLine={false} 
+                        tick={{ fill: 'var(--muted-foreground)', fontWeight: 600 }}
+                      />
+                      <YAxis 
+                        stroke="var(--muted-foreground)" 
+                        fontSize={11} 
+                        tickLine={false} 
+                        axisLine={false} 
+                        domain={[0, 100]} 
+                        tick={{ fill: 'var(--muted-foreground)', fontWeight: 600 }}
+                      />
+                      <RechartsTooltip 
+                        contentStyle={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', borderRadius: '12px', fontSize: '12px', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }}
+                        itemStyle={{ color: 'var(--primary)', fontWeight: 'bold' }}
+                        cursor={{ stroke: 'var(--primary)', strokeWidth: 1, strokeDasharray: '4 4' }}
+                      />
+                      <Area 
+                        type="monotone" 
+                        dataKey="score" 
+                        stroke="var(--primary)" 
+                        strokeWidth={3} 
+                        fillOpacity={1} 
+                        fill="url(#colorScore)" 
+                        animationDuration={1500}
+                      />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="flex flex-col items-center justify-center text-center space-y-2">
+                    <Sparkles className="w-8 h-8 text-muted-foreground/20" />
+                    <p className="text-sm text-muted-foreground font-serif">No performance data yet</p>
+                    <p className="text-[10px] text-muted-foreground/60 uppercase tracking-widest font-bold">Complete sessions to see your trend</p>
+                  </div>
+                )
               ) : (
                 <div className="w-full h-full bg-muted/20 animate-pulse rounded-2xl" />
               )}
