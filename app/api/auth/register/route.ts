@@ -36,10 +36,21 @@ export async function POST(req: NextRequest) {
 
     const token = signToken({ id: newUser._id.toString(), email: newUser.email });
 
-    return NextResponse.json(
+    const response = NextResponse.json(
       { success: true, token, user: { id: newUser._id, email: newUser.email, name: newUser.name } },
       { status: 201 }
     );
+
+    // Set the HttpOnly Cookie
+    response.cookies.set('study_buddy_token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      path: '/',
+      maxAge: 7 * 24 * 60 * 60 // 7 days
+    })
+
+    return response;
   } catch (error: any) {
     console.error("Register Error:", error);
     return NextResponse.json(
