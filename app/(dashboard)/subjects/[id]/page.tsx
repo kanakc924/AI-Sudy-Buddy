@@ -53,10 +53,7 @@ export default function TopicsPage() {
       setTopics(res.data)
 
       // 3. Fetch Sessions for this subject
-      const token = localStorage.getItem('study_buddy_token')
-      const sRes = await fetch(`/api/sessions?subjectId=${subjectId}`, {
-        headers: token ? { Authorization: `Bearer ${token}` } : {}
-      })
+      const sRes = await fetch(`/api/sessions?subjectId=${subjectId}`)
       if (sRes.ok) {
         const sJson = await sRes.json()
         setSessions(sJson.data || [])

@@ -4,7 +4,7 @@ import { useAuth as useGlobalAuth } from "../context/AuthContext";
 import { useRouter } from "next/navigation";
 
 export function useAuth() {
-  const { user, token, loading, login: setTokenAndUser, logout } = useGlobalAuth();
+  const { user, loading, login: setTokenAndUser, logout } = useGlobalAuth();
   const router = useRouter();
   const [authLoading, setAuthLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -49,7 +49,6 @@ export function useAuth() {
 
   return {
     user,
-    token,
     loading: loading || authLoading,
     error,
     login,
