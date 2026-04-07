@@ -164,8 +164,8 @@ export default function DashboardPage() {
         ))}
       </div>
 
-      <div className="grid lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 space-y-6 flex flex-col">
+      <div className="grid lg:grid-cols-3 gap-6 overflow-hidden">
+        <div className="lg:col-span-2 space-y-6 flex flex-col min-w-0">
           {/* Heatmap */}
           <Card className="border-border bg-card rounded-3xl overflow-hidden shadow-sm">
             <CardHeader className="pb-3 border-b border-border/50">
@@ -224,7 +224,7 @@ export default function DashboardPage() {
                 Performance Trend
               </CardTitle>
             </CardHeader>
-            <CardContent className={cn("p-6 h-[280px] w-full flex items-center justify-center", scoreTrend.length === 0 && "bg-muted/5")}>
+            <CardContent className={cn("p-6 h-[280px] w-full flex items-center justify-center min-w-0 min-h-[280px]", scoreTrend.length === 0 && "bg-muted/5")}>
               {isMounted ? (
                 scoreTrend.length > 0 ? (
                   <ResponsiveContainer width="100%" height="100%">
