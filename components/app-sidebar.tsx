@@ -16,7 +16,12 @@ const SUBJECT_COLORS = [
   '#FF5722', '#7C5CFC', '#9C27B0', '#D4A853'
 ]
 
-export function AppSidebar() {
+interface AppSidebarProps {
+  isOpen?: boolean;
+  onClose?: () => void;
+}
+
+export function AppSidebar({ isOpen = false, onClose }: AppSidebarProps) {
   const pathname = usePathname()
   const router = useRouter()
   const { logout } = useAuth()
@@ -36,7 +41,25 @@ export function AppSidebar() {
   const aiUsage = 45
 
   return (
-    <aside className="fixed inset-y-0 left-0 z-40 hidden w-60 flex-col bg-sidebar border-r border-sidebar-border lg:flex">
+    <>
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={onClose}
+            className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm lg:hidden"
+          />
+        )}
+      </AnimatePresence>
+
+      <aside 
+        className={cn(
+          "fixed inset-y-0 left-0 z-50 w-60 flex flex-col bg-sidebar border-r border-sidebar-border shadow-2xl lg:shadow-none transition-transform duration-300 ease-in-out lg:translate-x-0",
+          isOpen ? "translate-x-0" : "-translate-x-full"
+        )}
+      >
       <div className="flex h-16 items-center px-4 gap-3 border-b border-sidebar-border/50 shrink-0">
         <div className="bg-primary/20 border border-primary/30 rounded-lg p-2">
           <Brain className="w-5 h-5 text-primary" />
@@ -51,6 +74,7 @@ export function AppSidebar() {
         <div className="flex flex-col gap-1">
           <Link 
             href="/dashboard"
+            onClick={onClose}
             className={cn(
               "flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium transition-all duration-200 cursor-pointer",
               pathname === '/dashboard' ? "bg-sidebar-accent text-sidebar-accent-foreground" : "text-muted-foreground hover:bg-primary/10 hover:text-primary"
@@ -94,6 +118,7 @@ export function AppSidebar() {
                       <Link 
                         key={subject._id}
                         href={`/subjects/${subject._id}`}
+                        onClick={onClose}
                         className={cn(
                           "flex flex-col gap-1.5 px-3 py-2 rounded-lg text-sm transition-all duration-200 group",
                           isActive ? "bg-sidebar-accent text-sidebar-accent-foreground" : "text-muted-foreground hover:bg-primary/10 hover:text-primary hover:border-l-2 hover:border-primary hover:pl-4"
@@ -128,5 +153,6 @@ export function AppSidebar() {
 
       </div>
     </aside>
+    </>
   )
 }

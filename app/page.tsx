@@ -52,7 +52,7 @@ export default function LandingPage() {
               transition={{ duration: 0.6 }}
               className="flex flex-col gap-6"
             >
-              <h1 className="font-serif text-5xl lg:text-6xl tracking-tight leading-tight text-white font-bold">
+              <h1 className="font-serif text-5xl lg:text-6xl tracking-tight leading-tight text-foreground font-bold">
                 The study partner that never sleeps.
               </h1>
               <p className="text-xl text-muted-foreground max-w-lg leading-relaxed">
