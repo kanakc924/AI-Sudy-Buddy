@@ -331,13 +331,11 @@ export default function DashboardPage() {
                 value={usagePercent} 
                 className={`h-2.5 mb-2 rounded-full ${isUsageHigh ? 'bg-destructive/10 [&>div]:bg-destructive' : 'bg-muted [&>div]:bg-primary'}`} 
               />
-              <div className="text-[10px] font-bold uppercase tracking-widest">
-                {isUsageHigh ? (
-                  <span className="text-destructive flex items-center gap-1"><AlertTriangle className="w-3 h-3" /> Nearing limit</span>
-                ) : (
-                  <span className="text-muted-foreground">Resets in 12h</span>
-                )}
-              </div>
+              {isUsageHigh && (
+                <div className="text-[10px] font-bold uppercase tracking-widest text-destructive flex items-center gap-1">
+                  <AlertTriangle className="w-3 h-3" /> Nearing limit
+                </div>
+              )}
             </CardContent>
           </Card>
 
