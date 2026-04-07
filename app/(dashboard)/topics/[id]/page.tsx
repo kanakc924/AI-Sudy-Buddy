@@ -97,10 +97,7 @@ export default function TopicDetailPage() {
     const fetchData = async () => {
       setIsMounted(true)
       try {
-        const token = localStorage.getItem('study_buddy_token')
-        const topicRes = await fetch(`/api/topics/${topicId}`, {
-          headers: token ? { Authorization: `Bearer ${token}` } : {}
-        })
+        const topicRes = await fetch(`/api/topics/${topicId}`)
         if (!topicRes.ok) throw new Error('Failed to fetch')
         const topicJson = await topicRes.json()
         setTopic(topicJson.data)
@@ -121,18 +118,14 @@ export default function TopicDetailPage() {
         }
 
         // Fetch Sessions
-        const sRes = await fetch(`/api/sessions?topicId=${topicId}`, {
-          headers: token ? { Authorization: `Bearer ${token}` } : {}
-        })
+        const sRes = await fetch(`/api/sessions?topicId=${topicId}`)
         if (sRes.ok) {
           const sJson = await sRes.json()
           setSessions(sJson.data || [])
         }
 
         // Fetch AI Usage
-        const statsRes = await fetch('/api/sessions/stats', {
-          headers: token ? { Authorization: `Bearer ${token}` } : {}
-        })
+        const statsRes = await fetch('/api/sessions/stats')
         if (statsRes.ok) {
           const statsJson = await statsRes.json()
           if (statsJson.data?.aiUsage) {
@@ -232,12 +225,10 @@ export default function TopicDetailPage() {
     }
     setIsSaving(true)
     try {
-      const token = localStorage.getItem('study_buddy_token')
       const res = await fetch(`/api/topics/${topicId}/materials`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
         body: JSON.stringify({ content: notes }),
       })

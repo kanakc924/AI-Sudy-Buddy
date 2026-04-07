@@ -1,10 +1,8 @@
 const apiFetch = async (path: string, options?: RequestInit) => {
-  const token = localStorage.getItem('study_buddy_token')
   const res = await fetch(`/api${path}`, {
     ...options,
     headers: {
       'Content-Type': 'application/json',
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...options?.headers,
     },
   })
@@ -67,13 +65,11 @@ export const deleteSourceMaterial = (topicId: string, materialId: string) =>
   apiFetch(`/topics/${topicId}/materials?materialId=${materialId}`, { method: 'DELETE' })
 
 export const uploadFile = async (topicId: string, file: File): Promise<{ extractedText: string }> => {
-  const token = localStorage.getItem('study_buddy_token')
   const formData = new FormData()
   formData.append('file', file)
 
   const res = await fetch(`/api/topics/${topicId}/upload`, {
     method: 'POST',
-    headers: token ? { Authorization: `Bearer ${token}` } : {},
     // DO NOT set Content-Type — browser sets it automatically with boundary
     body: formData,
   })
@@ -92,13 +88,11 @@ export const uploadFile = async (topicId: string, file: File): Promise<{ extract
 }
 
 export const uploadDocument = async (topicId: string, file: File): Promise<{ extractedText: string, data?: any }> => {
-  const token = localStorage.getItem('study_buddy_token')
   const formData = new FormData()
   formData.append('file', file)
 
   const res = await fetch(`/api/topics/${topicId}/upload`, {
     method: 'POST',
-    headers: token ? { Authorization: `Bearer ${token}` } : {},
     body: formData,
   })
 
@@ -116,13 +110,11 @@ export const uploadDocument = async (topicId: string, file: File): Promise<{ ext
 }
 
 export const uploadImage = async (topicId: string, file: File): Promise<{ extractedText: string, data?: any }> => {
-  const token = localStorage.getItem('study_buddy_token')
   const formData = new FormData()
   formData.append('file', file)
 
   const res = await fetch(`/api/topics/${topicId}/upload-image`, {
     method: 'POST',
-    headers: token ? { Authorization: `Bearer ${token}` } : {},
     body: formData,
   })
 
@@ -152,10 +144,9 @@ export const generateFromImage = async (topicId: string, type: 'flashcard' | 'qu
   form.append('file', file)
   form.append('type', type)
   form.append('topicId', topicId)
-  const token = localStorage.getItem('study_buddy_token')
+  
   const res = await fetch(`/api/generate/from-image`, {
     method: 'POST',
-    headers: token ? { Authorization: `Bearer ${token}` } : {},
     body: form,
   })
   
@@ -199,13 +190,11 @@ export const explainDiagram = async (
   topicId: string,
   file: File
 ): Promise<{ extractedText: string; imageUrl: string }> => {
-  const token = localStorage.getItem('study_buddy_token')
   const formData = new FormData()
   formData.append('image', file)
 
   const res = await fetch(`/api/topics/${topicId}/explain-diagram`, {
     method: 'POST',
-    headers: token ? { Authorization: `Bearer ${token}` } : {},
     body: formData,
   })
 

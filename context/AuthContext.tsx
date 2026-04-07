@@ -15,7 +15,6 @@ type User = {
 
 interface AuthContextType {
   user: User | null
-  token: string | null
   login: (token: string, user: User) => void
   logout: () => void
   updateAiUsage: (total: number) => void
@@ -27,7 +26,6 @@ const AuthContext = createContext<AuthContextType>({} as AuthContextType)
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
-  const [token, setToken] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
 
   const updateAiUsage = (total: number) => {
@@ -36,48 +34,39 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
-  useEffect(() => {
-    const stored = localStorage.getItem('study_buddy_token')
-    if (stored && stored !== 'undefined' && stored !== 'null') {
-      setToken(stored)
-      checkAuthWithToken(stored)
-    } else {
-      setLoading(false)
-    }
-  }, [])
-
-  const checkAuthWithToken = async (t: string) => {
+  const checkAuth = async () => {
+    setLoading(true)
     try {
       const res = await getMe()
       setUser(res.user || res.data || res)
     } catch {
-      localStorage.removeItem('study_buddy_token')
-      setToken(null)
       setUser(null)
     } finally {
       setLoading(false)
     }
   }
 
-  const checkAuth = async () => {
-    const stored = localStorage.getItem('study_buddy_token')
-    if (stored) await checkAuthWithToken(stored)
-  }
+  useEffect(() => {
+    checkAuth()
+  }, [])
 
   const login = (newToken: string, newUser: User) => {
-    localStorage.setItem('study_buddy_token', newToken)
-    setToken(newToken)
+    // The HTTP-only cookie is now set by the backend API automatically
     setUser(newUser)
   }
 
-  const logout = () => {
-    localStorage.removeItem('study_buddy_token')
-    setToken(null)
+  const logout = async () => {
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' })
+    } catch (e) {
+      console.error('Logout error', e)
+    }
     setUser(null)
+    window.location.href = '/login'
   }
 
   return (
-    <AuthContext.Provider value={{ user, token, login, logout, updateAiUsage, loading, checkAuth }}>
+    <AuthContext.Provider value={{ user, login, logout, updateAiUsage, loading, checkAuth }}>
       {children}
     </AuthContext.Provider>
   )
