@@ -23,10 +23,7 @@ export default function SummaryPage() {
     
     const fetchSummary = async () => {
       try {
-        const token = localStorage.getItem('study_buddy_token')
-        const res = await fetch(`/api/topics/${topicId}`, {
-          headers: token ? { Authorization: `Bearer ${token}` } : {}
-        })
+        const res = await fetch(`/api/topics/${topicId}`)
         const json = await res.json()
         setSummary(json.data.summary || '')
       } catch (err) {

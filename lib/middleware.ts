@@ -18,16 +18,22 @@ export function withAuth(
 ) {
   return async (req: NextRequest, ...args: any[]) => {
     try {
-      const authHeader = req.headers.get("authorization");
+      let token = req.cookies.get("study_buddy_token")?.value;
+      
+      // Fallback for Authorization header (if needed for API testing/external clients)
+      if (!token) {
+        const authHeader = req.headers.get("authorization");
+        if (authHeader && authHeader.startsWith("Bearer ")) {
+          token = authHeader.split(" ")[1];
+        }
+      }
 
-      if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      if (!token) {
         return NextResponse.json(
           { success: false, error: { message: "Unauthorized: Missing token", code: "UNAUTHORIZED" } },
           { status: 401 }
         );
       }
-
-      const token = authHeader.split(" ")[1];
       const decoded = verifyToken(token);
 
       if (!decoded) {

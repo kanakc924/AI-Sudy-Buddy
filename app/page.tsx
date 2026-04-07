@@ -7,15 +7,17 @@ import { motion } from 'framer-motion'
 import { Button } from '@/components/ui/button'
 import { BookOpen, ArrowRight, Brain, Zap, Target, FileText, TrendingUp, Sparkles, Flame } from 'lucide-react'
 import { ThemeToggle } from '@/components/theme-toggle'
+import { useAuth } from '@/hooks/useAuth'
 
 export default function LandingPage() {
   const router = useRouter()
+  const { user, loading } = useAuth()
 
   useEffect(() => {
-    if (localStorage.getItem('study_buddy_token')) {
+    if (!loading && user) {
       router.push('/dashboard')
     }
-  }, [router])
+  }, [router, user, loading])
 
   return (
     <div className="min-h-screen bg-background text-foreground noise-bg relative flex flex-col">
