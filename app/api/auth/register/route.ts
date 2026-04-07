@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { cookies } from "next/headers";
 import connectDB from "../../../../lib/db";
 import User from "../../../../models/User";
 import bcrypt from "bcryptjs";
@@ -35,6 +36,15 @@ export async function POST(req: NextRequest) {
     });
 
     const token = signToken({ id: newUser._id.toString(), email: newUser.email });
+
+    const cookieStore = await cookies();
+    cookieStore.set("study_buddy_token", token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      maxAge: 60 * 60 * 24 * 7, // 1 week
+      path: "/",
+    });
 
     return NextResponse.json(
       { success: true, token, user: { id: newUser._id, email: newUser.email, name: newUser.name } },
