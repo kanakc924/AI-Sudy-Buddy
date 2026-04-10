@@ -23,11 +23,14 @@ async function generateQuizRoute(req: AuthenticatedRequest, context: { params: P
       "X-RateLimit-Reset": reset.toString(),
     };
 
-    // Check for replace flag in body
+    // Check for replace flag and count in body
     let replace = false;
+    let count = 10;
     try {
       const body = await req.json();
       replace = body.replace === true;
+      const requestedCount = parseInt(body.count) || 10;
+      count = Math.min(Math.max(requestedCount, 5), 20);
     } catch (e) {
       // Body may be empty
     }
@@ -48,7 +51,7 @@ async function generateQuizRoute(req: AuthenticatedRequest, context: { params: P
       );
     }
 
-    const quizData = await generateQuiz(topic.notes);
+    const quizData = await generateQuiz(topic.notes, count);
 
     // If replace is requested, remove existing quizzes for this topic
     if (replace) {

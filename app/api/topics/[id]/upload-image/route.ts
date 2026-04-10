@@ -4,7 +4,7 @@ import mongoose from "mongoose";
 import connectDB from "../../../../../lib/db";
 import Topic from "../../../../../models/Topic";
 import { withAuth, AuthenticatedRequest } from "../../../../../lib/middleware";
-import { extractTextFromImage, sanitizeText } from "../../../../../services/ai.service";
+import { extractTextFromImage } from "../../../../../services/ai.service";
 import { uploadImageToCloudinary } from "../../../../../services/cloudinary.service";
 import { errorResponse } from "../../../../../lib/handleApiError";
 import { aiRateLimiter } from "../../../../../lib/rateLimiter";
@@ -52,10 +52,10 @@ async function uploadImage(req: AuthenticatedRequest, context: { params: Promise
       );
     }
 
-    // Validate file size (5MB)
-    if (file.size > 5 * 1024 * 1024) {
+    // Validate file size (10MB)
+    if (file.size > 10 * 1024 * 1024) {
       return NextResponse.json(
-        { success: false, error: "Image size exceeds 5MB limit", code: "VALIDATION_ERROR" },
+        { success: false, error: "Image size exceeds 10MB limit", code: "VALIDATION_ERROR" },
         { status: 400 }
       );
     }
@@ -76,10 +76,7 @@ async function uploadImage(req: AuthenticatedRequest, context: { params: Promise
     const cloudinaryResult = await uploadImageToCloudinary(buffer);
 
     // Extract text from image via OpenRouter AI Vision
-    const rawExtractedText = await extractTextFromImage(uint8Array, file.type);
-    
-    // Sanitize and format the text (fix spaces, line breaks, etc.)
-    const extractedText = await sanitizeText(rawExtractedText);
+    const extractedText = await extractTextFromImage(uint8Array, file.type);
 
     // Save to Topic
     const extension = file.name.split('.').pop() || "jpg";

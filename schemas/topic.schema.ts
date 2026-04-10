@@ -3,6 +3,7 @@ import { z } from "zod";
 export const CreateTopicSchema = z.object({
   title: z.string().min(1, "Title is required").max(100, "Title is too long"),
   notes: z.string().max(50000, "Notes are too long").optional(),
+  summary: z.string().max(100000, "Summary is too long").optional(),
 });
 
 export const UpdateTopicSchema = CreateTopicSchema.partial();

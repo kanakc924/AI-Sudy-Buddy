@@ -4,7 +4,7 @@ import mongoose from 'mongoose'
 import connectDB from '@/lib/db'
 import { verifyToken } from '@/lib/auth'
 import { uploadImageToCloudinary } from '@/services/cloudinary.service'
-import { explainDiagram, sanitizeText } from '@/services/ai.service'
+import { explainDiagram } from '@/services/ai.service'
 import { errorResponse } from '@/lib/handleApiError'
 import { aiRateLimiter } from '@/lib/rateLimiter'
 
@@ -52,6 +52,14 @@ export async function POST(
       return NextResponse.json({ success: false, error: 'No image provided', code: 'VALIDATION_ERROR' }, { status: 400 })
     }
 
+    // Validate file size (10MB)
+    if (file.size > 10 * 1024 * 1024) {
+      return NextResponse.json(
+        { success: false, error: "Image size exceeds 10MB limit", code: "VALIDATION_ERROR" },
+        { status: 400 }
+      );
+    }
+
     // Upload to Cloudinary
     const arrayBuffer = await file.arrayBuffer()
     const buffer = Buffer.from(arrayBuffer)
@@ -61,7 +69,7 @@ export async function POST(
     const rawText = await explainDiagram(buffer, file.type);
     
     // Sanitize and format the text (fix spaces, line breaks, etc.)
-    const text = await sanitizeText(rawText);
+    const text = rawText;
 
     // Save to Topic
     const extension = file.name.split('.').pop() || "png";

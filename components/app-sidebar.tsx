@@ -56,7 +56,7 @@ export function AppSidebar({ isOpen = false, onClose }: AppSidebarProps) {
 
       <aside 
         className={cn(
-          "fixed inset-y-0 left-0 z-50 w-60 flex flex-col bg-sidebar border-r border-sidebar-border shadow-2xl lg:shadow-none transition-transform duration-300 ease-in-out lg:translate-x-0",
+          "fixed inset-y-0 left-0 z-50 w-60 flex flex-col bg-sidebar border-r border-sidebar-border shadow-2xl lg:shadow-none transition-transform duration-300 ease-in-out lg:translate-x-0 no-print",
           isOpen ? "translate-x-0" : "-translate-x-full"
         )}
       >

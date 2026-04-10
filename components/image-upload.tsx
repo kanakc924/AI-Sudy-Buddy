@@ -28,9 +28,9 @@ export function ImageUpload({ topicId, onExtracted }: { topicId: string, onExtra
   }
 
   const processImage = async (file: File) => {
-    // Validate file size (5MB)
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error('File size exceeds 5MB limit')
+    // Validate file size (10MB)
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error('File size exceeds 10MB limit')
       return
     }
 

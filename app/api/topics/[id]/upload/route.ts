@@ -3,7 +3,6 @@ import connectDB from "../../../../../lib/db";
 import Topic from "../../../../../models/Topic";
 import { withAuth, AuthenticatedRequest } from "../../../../../lib/middleware";
 import { extractTextFromPdf } from "../../../../../services/pdf.service";
-import { sanitizeText } from "../../../../../services/ai.service";
 import { errorResponse } from "../../../../../lib/handleApiError";
 
 async function uploadFile(req: AuthenticatedRequest, context: { params: Promise<{ id: string }> }) {
@@ -22,10 +21,10 @@ async function uploadFile(req: AuthenticatedRequest, context: { params: Promise<
       );
     }
 
-    // Validate file size (5MB)
-    if (file.size > 5 * 1024 * 1024) {
+    // Validate file size (10MB)
+    if (file.size > 10 * 1024 * 1024) {
       return NextResponse.json(
-        { success: false, error: "File size exceeds 5MB limit", code: "VALIDATION_ERROR" },
+        { success: false, error: "File size exceeds 10MB limit", code: "VALIDATION_ERROR" },
         { status: 400 }
       );
     }
@@ -48,9 +47,6 @@ async function uploadFile(req: AuthenticatedRequest, context: { params: Promise<
     } else if (file.type === "text/plain") {
       extractedText = buffer.toString("utf-8");
     }
-
-    // Sanitize and format the text (fix spaces, line breaks, etc.)
-    extractedText = await sanitizeText(extractedText);
 
     // Save formal source material to DB
     const extension = file.name.split('.').pop() || "";

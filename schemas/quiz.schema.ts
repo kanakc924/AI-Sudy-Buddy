@@ -17,7 +17,7 @@ export const QuizOutputSchema = z.object({
         .string()
         .describe("Why the correct answer is right"),
     })
-  ),
+  ).min(1).max(20),
 });
 
 export type QuizOutput = z.infer<typeof QuizOutputSchema>;
