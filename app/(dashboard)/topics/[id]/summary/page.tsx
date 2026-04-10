@@ -173,18 +173,19 @@ function MermaidDiagram({ code }: { code: string }) {
         const mermaid = (await import('mermaid')).default
         mermaid.initialize({
           startOnLoad: false,
-          theme: 'dark',
-          suppressErrorRendering: true,
+          theme: 'base', // Using base for better print control
           themeVariables: {
-            primaryColor: '#7C5CFC',
-            primaryTextColor: '#F2EDE4',
-            primaryBorderColor: '#A78BFA',
-            lineColor: '#A78BFA',
-            secondaryColor: '#1E1E35',
-            background: '#13112B',
-            mainBkg: '#1E1E35',
-            nodeBorder: '#7C5CFC',
-            fontFamily: 'DM Sans, sans-serif',
+            fontSize: '14px',
+            fontFamily: 'Inter, sans-serif',
+            primaryColor: '#ffffff',
+            nodeBorder: '#4338ca',
+          },
+          flowchart: {
+            padding: 30,      // Increase padding to prevent word cutting
+            nodeSpacing: 60,
+            rankSpacing: 60,
+            useMaxWidth: false, // Ensure full resolution for print
+            htmlLabels: false,  // Better for consistent SVG rendering in PDFs
           },
         })
 
@@ -273,7 +274,7 @@ export default function SummaryPage() {
         margin: 0mm; 
       }
       body {
-        padding: 2.5cm;
+        padding: 1.5cm;
         background: white !important;
         -webkit-print-color-adjust: exact;
       }
@@ -294,20 +295,33 @@ export default function SummaryPage() {
         border: none !important; 
         box-shadow: none !important; 
       }
-      /* Ensure Mermaid diagrams are visible in print */
+      /* Ensure Mermaid diagrams are visible and appropriately scaled in print */
+      .mermaid {
+        width: 100% !important;
+        display: flex !important;
+        justify-content: center !important;
+        margin: 20pt 0 !important;
+      }
       .mermaid svg {
+        width: 100% !important;
         max-width: 100% !important;
         height: auto !important;
+        overflow: visible !important;
       }
       .mermaid .node rect, .mermaid .node circle, .mermaid .node polygon, .mermaid rect { 
         fill: #ffffff !important; 
         stroke: #4338ca !important; 
         stroke-width: 1.5px !important; 
       }
-      .mermaid text, .mermaid .label { 
+      .mermaid text, .mermaid .label, .mermaid .nodeText { 
         fill: #000000 !important; 
         color: #000000 !important; 
         font-weight: 700 !important; 
+        font-size: 10px !important;
+        text-rendering: geometricPrecision !important;
+      }
+      .mermaid .node label, .mermaid .label {
+        padding: 10px !important;
       }
     `,
     onAfterPrint: () => {

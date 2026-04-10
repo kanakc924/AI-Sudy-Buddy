@@ -148,7 +148,12 @@ RULE 3 — Use simple LaTeX that KaTeX can render. Avoid complex packages.
   - $y_i$ = output probability for token i
   - $u_i$ = raw logit score for token i
 RULE 4 — Use \\mid for conditional probability (NOT |)
-RULE 5 — NEVER write raw LaTeX without dollar sign delimiters`;
+RULE 5 — NEVER write raw LaTeX without dollar sign delimiters
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+FIELD SPECIFIC RULES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+1. 'keyTakeaways': Return strings in "Concept: Detail" format. ALWAYS use a plain text format. NEVER use markdown bolding (**) or asterisks for concept names.`;
 
 // generateSummary
 export async function generateSummary(notes: string, imageCount = 0): Promise<SummaryOutput> {
@@ -162,12 +167,20 @@ export async function generateSummary(notes: string, imageCount = 0): Promise<Su
 STRICT CONTENT RULES:
 1. KEY TAKEAWAYS: Do not use generic statements. Every takeaway must be a testable technical fact from the notes. 
    - Format: [Technical Concept Name]: [Specific technical detail including math/parameters if applicable].
-   - CRITICAL: Do not wrap the concept name in asterisks or use standard markdown bolding at the start of lines; use the pure text format.
+   - CRITICAL: Do not wrap the concept name in asterisks or use standard markdown bolding at the start of lines.
+   - WRONG: **Concept**: Detail
+   - RIGHT: Concept: Detail
 2. CITATIONS: Ground every section in the provided source IDs using.
 3. VISUALS: Ensure the 'visualProcessFlow' contains a valid, quoted flowchart TD structure.
 
 ${imageCount > 0 ? `Integrate visual insights from the ${imageCount} attached images.` : ""}`,
     })
+
+    // FAIL-SAFE: Surgical strike on lingering bold markers in takeaways
+    if (object.keyTakeaways) {
+      object.keyTakeaways = object.keyTakeaways.map(t => t.replace(/\*\*/g, ''));
+    }
+
     return object
   })
 }
