@@ -556,24 +556,8 @@ export default function TopicDetailPage() {
                 
                 {card.id === 'quiz' && (
                   <div className="flex items-center gap-2 mb-2 no-print">
-                    <span className="text-[10px] font-bold tracking-widest uppercase text-muted-foreground">Questions:</span>
-                    {[10, 15, 20].map(n => (
-                      <button
-                        key={n}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setQuizCount(n);
-                        }}
-                        className={cn(
-                          "text-[10px] px-2 py-0.5 rounded-full border transition-all font-bold",
-                          quizCount === n
-                            ? 'bg-blue-500 text-white border-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.3)]'
-                            : 'border-border text-muted-foreground hover:border-blue-500/50 hover:text-blue-500'
-                        )}
-                      >
-                        {n}
-                      </button>
-                    ))}
+                    <span className="text-[10px] font-bold tracking-widest uppercase text-muted-foreground">Standard Set:</span>
+                    <span className="text-[10px] px-2 py-0.5 rounded-full border border-blue-500 bg-blue-500 text-white shadow-[0_0_10px_rgba(59,130,246,0.3)] font-bold">10 Questions</span>
                   </div>
                 )}
                 
