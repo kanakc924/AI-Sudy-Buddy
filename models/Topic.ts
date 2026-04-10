@@ -17,7 +17,7 @@ export interface ITopic extends Document {
   userId: mongoose.Types.ObjectId;
   title: string;
   notes?: string;
-  summary?: string;
+  summary?: any;
   sourceImages: any[]; // Deprecated, move to sourceMaterials
   sourceMaterials: ISourceMaterial[];
   createdAt: Date;
@@ -30,7 +30,7 @@ const topicSchema = new Schema<ITopic>(
     userId: { type: Schema.Types.ObjectId, ref: "User", required: true },
     title: { type: String, required: true },
     notes: { type: String, default: "" },
-    summary: { type: String },
+    summary: { type: Schema.Types.Mixed },
     sourceImages: [],
     sourceMaterials: [
       {

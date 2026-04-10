@@ -26,7 +26,7 @@ export function Navbar({ onMenuClick }: NavbarProps) {
   }
 
   return (
-    <header className="h-16 border-b border-border bg-surface/50 backdrop-blur top-0 sticky z-30 flex items-center justify-between px-4 lg:px-8">
+    <header className="h-16 border-b border-border bg-surface/50 backdrop-blur top-0 sticky z-30 flex items-center justify-between px-4 lg:px-8 no-print">
       <div className="flex items-center gap-4">
         <button 
           onClick={onMenuClick}

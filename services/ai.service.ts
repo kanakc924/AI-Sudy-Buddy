@@ -2,6 +2,7 @@ import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import { generateText, generateObject } from "ai";
 import { FlashcardOutputSchema, FlashcardOutput } from "../schemas/flashcard.schema";
 import { QuizOutputSchema, QuizOutput } from "../schemas/quiz.schema";
+import { SummaryOutputSchema, SummaryOutput } from "../schemas/summary.schema";
 
 const openrouter = createOpenRouter({
   apiKey: process.env.OPENROUTER_API_KEY,
@@ -10,14 +11,21 @@ const openrouter = createOpenRouter({
 // Primary model or a chain of free alternatives
 const MODELS = [
   'google/gemma-3-27b-it:free',
-  'google/gemma-3-12b-it:free',
-  process.env.OPENROUTER_FALLBACK_MODEL || 'openrouter/free',
+  'google/gemma-4-31b-it:free',
+  'meta-llama/llama-3.3-70b-instruct:free',
+  process.env.OPENROUTER_FALLBACK_MODEL || 'openrouter/auto',
 ]
 
 const VISION_MODELS = [
   'google/gemma-3-27b-it:free',
-  'google/gemma-3-12b-it:free',
-  process.env.OPENROUTER_FALLBACK_MODEL || 'openrouter/free',
+  'google/gemma-4-31b-it:free',
+  'openrouter/auto',
+]
+
+const SUMMARY_MODELS = [
+  'meta-llama/llama-3.3-70b-instruct:free',
+  'google/gemma-3-27b-it:free',
+  'openrouter/auto',
 ]
 
 /**
@@ -45,9 +53,13 @@ async function withFallback<T>(
       const isRecoverable =
         error?.statusCode === 429 ||
         error?.status === 429 ||
+        error?.statusCode === 404 || // Skip if model is missing/deprecated
+        error?.status === 404 ||
         error?.message?.includes('429') ||
         error?.message?.includes('rate') ||
         error?.message?.includes('rate-limited') ||
+        error?.message?.includes('No endpoints found') ||
+        error?.message?.includes('not found') ||
         error?.message?.includes('Failed to process successful response') || // Catch Vercel AI SDK parsing errors
         error?.name === 'AI_ObjectGenerationError' ||
         error?.reason === 'maxRetriesExceeded' ||
@@ -66,24 +78,98 @@ async function withFallback<T>(
 
   // All models exhausted
   console.error('All models exhausted. Last error:', lastError?.message || lastError);
+
+  const errorMessage = lastError?.message || '';
+  const isDailyLimit = errorMessage.includes('free-models-per-day') || errorMessage.includes('Rate limit exceeded');
+
+  if (isDailyLimit) {
+    throw new Error(
+      "You've reached the daily limit for free AI models. OpenRouter allows a certain number of free requests per day. Please try again tomorrow, or you can add credits to your OpenRouter account for uninterrupted access."
+    );
+  }
+
   throw new Error(
-    `AI Generation failed after trying all fallback models. Last error: ${lastError?.message || 'Unknown error'}`
+    `The AI is currently at maximum capacity. We tried multiple free models, but all are busy right now. Please wait 1–2 minutes and try again. (Technical error: ${errorMessage || 'Connection timeout'})`
   );
 }
 
-// generateSummary
-export async function generateSummary(notes: string): Promise<string> {
-  return withFallback(MODELS, async (modelId) => {
-    const { text } = await generateText({
-      model: openrouter(modelId),
-      prompt: `You are an expert tutor. Summarize the following study notes 
-in a clear, structured format with key concepts highlighted.
+const SUMMARY_SYSTEM_PROMPT = `You are SAGE — a world-class academic architect. 
 
-Notes:
-${notes}`,
-    });
-    return text;
-  });
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+FORMATTING RULES — STRICT MANDATE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+1. NEVER generate emojis anywhere in the document.
+2. Section headers MUST follow this exact uppercase numbered format:
+   - 01. EXECUTIVE OVERVIEW
+   - 02. KEY CONCEPTS
+   - 03. DEEP DIVE
+   - 04. MATHEMATICAL FOUNDATIONS
+   - 05. VISUAL PROCESS FLOW
+   - 06. COMMON PITFALLS
+   - 07. DEFINITIONS
+   - 08. DID YOU KNOW?
+   - 09. KEY TAKEAWAYS
+3. Use standard LaTeX ($...$ or $$...$$) for all math.
+4. Use Mermaid flowchart TD for diagrams, strictly following the double-quote label rule.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+MERMAID DIAGRAM RULES — CRITICAL
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Valid example you must match exactly:
+flowchart TD
+    A["Text Corpus"] --> B["Pretraining"]
+    B --> C["Pretrained LLM"]
+    C --> D["Finetuning"]
+    C --> E["Prompting"]
+    D --> F["Task-Specific LLM"]
+    E --> G["Conditional Generation"]
+    G --> H["Text Output"]
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+MATHEMATICAL RIGOR — CRITICAL
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Extract any and all mathematical formulas, scientific notations, or statistical functions present in the material.
+
+1. DETECTION: Scan for equations like Softmax, Loss functions, or scientific constants.
+2. FORMATTING: Use strict LaTeX ($...$ for inline or $$...$$ for blocks).
+3. DECONSTRUCTION: For every formula, you must:
+   - Provide the RAW LaTeX string in the 'mathematicalFoundations' field (NO dollar signs, NO titles, NO English 'where' clauses).
+   - List every variable used as a markdown list (e.g., "- $u$ = logits").
+   - Explain the "Intuition" (e.g., "Why do we use this? What does it solve?").
+4. FALLBACK: if no complex math exists, leave the mathematicalFoundations field empty.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+LATEX MATH RULES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+RULE 1 — Inline math: wrap in single dollar signs: $P(w_i \mid w_{<i})$
+RULE 2 — Block math: wrap in double dollar signs on their own line:
+$$y_i = \frac{\exp(u_i)}{\sum_j \exp(u_j)}$$
+RULE 3 — Use simple LaTeX that KaTeX can render. Avoid complex packages.
+  - $y_i$ = output probability for token i
+  - $u_i$ = raw logit score for token i
+RULE 4 — Use \\mid for conditional probability (NOT |)
+RULE 5 — NEVER write raw LaTeX without dollar sign delimiters`;
+
+// generateSummary
+export async function generateSummary(notes: string, imageCount = 0): Promise<SummaryOutput> {
+  return withFallback(SUMMARY_MODELS, async (modelId) => {
+    const { object } = await generateObject({
+      model: openrouter(modelId),
+      schema: SummaryOutputSchema,
+      system: SUMMARY_SYSTEM_PROMPT,
+      prompt: `Transform these research notes into a high-fidelity academic summary: ${notes}.
+
+STRICT CONTENT RULES:
+1. KEY TAKEAWAYS: Do not use generic statements. Every takeaway must be a testable technical fact from the notes. 
+   - Format: [Technical Concept Name]: [Specific technical detail including math/parameters if applicable].
+   - CRITICAL: Do not wrap the concept name in asterisks or use standard markdown bolding at the start of lines; use the pure text format.
+2. CITATIONS: Ground every section in the provided source IDs using.
+3. VISUALS: Ensure the 'visualProcessFlow' contains a valid, quoted flowchart TD structure.
+
+${imageCount > 0 ? `Integrate visual insights from the ${imageCount} attached images.` : ""}`,
+    })
+    return object
+  })
 }
 
 // generateFlashcards
@@ -110,16 +196,23 @@ ${notes}`,
 // generateQuiz
 export async function generateQuiz(
   notes: string,
-  count = 5
+  count = 10
 ): Promise<QuizOutput['questions']> {
   return withFallback(MODELS, async (modelId) => {
     const { object } = await generateObject({
       model: openrouter(modelId),
       schema: QuizOutputSchema,
-      prompt: `You are an expert tutor. Generate exactly ${count} multiple-choice 
-questions from these study notes. Make the wrong options plausible but 
-clearly incorrect to someone who studied the material.
-Return the output in JSON format.
+      prompt: `You are a strict exam question writer. Generate exactly ${count} multiple-choice questions in JSON format from the study notes below.
+
+Rules you must follow without exception:
+- Every question must test a specific fact, concept, or relationship from the notes
+- Each question must have exactly 4 options labelled A, B, C, D
+- Exactly one option must be correct — never two or zero correct answers
+- Wrong options must be plausible but clearly distinguishable from the correct answer by someone who studied
+- Do not write vague questions like "Which of the following is true" — be specific
+- Do not repeat the same concept across multiple questions
+- Explanation must state WHY the correct answer is right in one clear sentence
+- Questions must vary in difficulty: 30% easy recall, 40% understanding, 30% application
 
 Notes:
 ${notes}`,
@@ -231,7 +324,7 @@ Return the output in JSON format.`,
 export async function generateQuizFromImage(
   imageBuffer: Uint8Array,
   mimeType: string,
-  count = 5
+  count = 10
 ): Promise<QuizOutput['questions']> {
   const base64Image = Buffer.from(imageBuffer).toString('base64');
   const imageUri = `data:${mimeType};base64,${base64Image}`;
@@ -246,9 +339,15 @@ export async function generateQuizFromImage(
           content: [
             {
               type: 'text',
-              text: `Look at this image of study material and generate exactly ${count} 
-multiple-choice questions based on what you see.
-Return the output in JSON format.`,
+              text: `You are a strict exam question writer. Generate exactly ${count} multiple-choice questions in JSON format from the study material visible in this image.
+
+Rules:
+- Every question must be directly based on content visible in the image
+- Each question must have exactly 4 options
+- Exactly one correct answer per question
+- Wrong options must be plausible but incorrect
+- Explanation must be one clear sentence stating why the correct answer is right
+- Vary difficulty: 30% recall, 40% understanding, 30% application`,
             },
             {
               type: 'image',
@@ -300,43 +399,3 @@ Write in clear, simple language a student would understand.`,
   });
 }
 
-/**
- * Sanitizes and formats extracted text to fix merged words, broken lines, 
- * and poor spacing while preserving headings and bullet points.
- */
-export async function sanitizeText(rawText: string): Promise<string> {
-  if (!rawText || rawText.trim().length === 0) return rawText;
-
-  // Step 1: Pre-process with Regex for basic line merging
-  // Join lines that don't end in . ! or ? AND are followed by a lowercase letter or space
-  let processedText = rawText.replace(/([^.!?:])\n([a-z\s])/g, '$1 $2');
-
-  // Step 2: AI-Powered "Smart Formatting"
-  // This handles the "merged words" problem (e.g. "Acomputeris...") 
-  // and overall readability while preserving structure.
-  try {
-    const result = await withFallback(MODELS, async (modelId) => {
-      const { text } = await generateText({
-        model: openrouter(modelId),
-        prompt: `You are a professional text formatter. Your goal is to take noisy, poorly-spaced text from OCR/extraction and make it highly readable for students.
-
-TASKS:
-1. WORD SEGMENTATION: If you see merged words like "Acomputeris", fix them into "A computer is".
-2. LINE MERGING: If a sentence was split mid-phrase across lines, merge it back into a fluid paragraph.
-3. STRUCTURE PRESERVATION: Keep all bullet points (•), numbered lists, and headers (like "Definition", "Uses") exactly as they are.
-4. SPACING: Use proper paragraph breaks. Ensure one clear empty line between different sections.
-5. NO COMMENTARY: Return ONLY the cleaned text. Do not add "Here is the text" or any introductory remarks.
-
-RAW TEXT TO CLEAN:
-${processedText}`,
-      });
-      return text.trim();
-    });
-
-    return result;
-  } catch (error) {
-    console.error('Text Sanitization Error:', error);
-    // Fallback to the regex-processed text if AI fails
-    return processedText;
-  }
-}

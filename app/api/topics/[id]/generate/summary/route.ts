@@ -31,14 +31,29 @@ async function generateSummaryRoute(req: AuthenticatedRequest, context: { params
       );
     }
 
-    if (!topic.notes || topic.notes.trim().length === 0) {
+    // Combine notes and extracted text from source materials for a comprehensive summary
+    let combinedContent = topic.notes || "";
+    
+    if (topic.sourceMaterials && topic.sourceMaterials.length > 0) {
+      const materialsText = topic.sourceMaterials
+        .map((m: any) => m.extractedText || m.content || "")
+        .filter((t: string) => t.length > 0)
+        .join("\n\n");
+      
+      if (materialsText) {
+        combinedContent += "\n\n--- Source Materials ---\n\n" + materialsText;
+      }
+    }
+
+    if (combinedContent.trim().length === 0) {
       return NextResponse.json(
-        { success: false, error: "Topic has no notes to generate from", code: "NO_CONTENT" },
+        { success: false, error: "Topic has no content to generate from", code: "NO_CONTENT" },
         { status: 400 }
       );
     }
 
-    const summaryData = await generateSummary(topic.notes);
+    const imageCount = topic.sourceMaterials?.filter((m: any) => m.type === 'image').length || 0;
+    const summaryData = await generateSummary(combinedContent, imageCount);
 
     // Save to DB
     topic.summary = summaryData;

@@ -50,6 +50,7 @@ export default function TopicDetailPage() {
   const [notes, setNotes] = useState('')
   const [isSaving, setIsSaving] = useState(false)
   const [saveStatus, setSaveStatus] = useState<'idle'|'saving'|'saved'>('idle')
+  const [quizCount, setQuizCount] = useState(10)
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   
   // Generation state
@@ -170,7 +171,7 @@ export default function TopicDetailPage() {
     try {
       let res
       if (type === 'flashcards') res = await generateFlashcards(topicId, replace)
-      else if (type === 'quiz') res = await generateQuiz(topicId, replace)
+      else if (type === 'quiz') res = await generateQuiz(topicId, quizCount, replace)
       else if (type === 'summary') res = await generateSummary(topicId)
       
       // Update global AI usage in sidebar instantly via headers
@@ -246,6 +247,12 @@ export default function TopicDetailPage() {
   const handleDirectImageGenerate = async (e: React.ChangeEvent<HTMLInputElement>, type: 'flashcard' | 'quiz') => {
     const file = e.target.files?.[0]
     if (!file) return
+
+    // Validate file size (10MB)
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error('Image size exceeds 10MB limit')
+      return
+    }
 
     if (rateLimited) {
       toast.warning('Rate limit active. Please wait.')
@@ -547,6 +554,29 @@ export default function TopicDetailPage() {
                   <p className="text-sm text-muted-foreground">{card.desc}</p>
                 </div>
                 
+                {card.id === 'quiz' && (
+                  <div className="flex items-center gap-2 mb-2 no-print">
+                    <span className="text-[10px] font-bold tracking-widest uppercase text-muted-foreground">Questions:</span>
+                    {[10, 15, 20].map(n => (
+                      <button
+                        key={n}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setQuizCount(n);
+                        }}
+                        className={cn(
+                          "text-[10px] px-2 py-0.5 rounded-full border transition-all font-bold",
+                          quizCount === n
+                            ? 'bg-blue-500 text-white border-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.3)]'
+                            : 'border-border text-muted-foreground hover:border-blue-500/50 hover:text-blue-500'
+                        )}
+                      >
+                        {n}
+                      </button>
+                    ))}
+                  </div>
+                )}
+                
                 <div className="mt-auto pt-4 flex gap-2">
                   <Button 
                     className="flex-1 rounded-xl font-medium" 
@@ -571,14 +601,18 @@ export default function TopicDetailPage() {
                        (card.id === 'quiz' && topic?.quizCount > 0) || 
                        (card.id === 'summary' && topic?.summary)) ? 'Regenerate' : 'Generate'}
                   </Button>
-                  <Button 
-                    variant="outline" 
-                    className="rounded-xl px-2 border-border hover:bg-card"
-                    title={`View existing ${card.title}`}
-                    onClick={() => router.push(`/topics/${topicId}/${card.id === 'summary' ? 'summary' : card.id === 'flashcards' ? 'flashcards' : 'quiz'}`)}
+                  <Link 
+                    href={`/topics/${topicId}/${card.id === 'summary' ? 'summary' : card.id === 'flashcards' ? 'flashcards' : 'quiz'}`}
+                    onClick={(e) => e.stopPropagation()}
                   >
-                    <Play className="w-4 h-4 text-muted-foreground" />
-                  </Button>
+                    <Button 
+                      variant="outline" 
+                      className="rounded-xl px-2 border-border hover:bg-card h-full"
+                      title={`View existing ${card.title}`}
+                    >
+                      <Play className="w-4 h-4 text-muted-foreground" />
+                    </Button>
+                  </Link>
                 </div>
               </div>
             ))}

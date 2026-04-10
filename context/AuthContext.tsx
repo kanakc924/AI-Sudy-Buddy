@@ -39,7 +39,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const res = await getMe()
       setUser(res.user || res.data || res)
-    } catch {
+    } catch (err: any) {
+      console.warn('[AUTH] Initial check failed:', err.message)
       setUser(null)
     } finally {
       setLoading(false)

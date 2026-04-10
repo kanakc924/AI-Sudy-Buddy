@@ -19,6 +19,7 @@ export function withAuth(
   return async (req: NextRequest, ...args: any[]) => {
     try {
       let token: string | undefined = req.cookies.get("study_buddy_token")?.value;
+      const url = req.nextUrl.pathname;
 
       if (!token) {
         const authHeader = req.headers.get("authorization");
@@ -28,14 +29,17 @@ export function withAuth(
       }
 
       if (!token) {
+        console.warn(`[AUTH] Missing token for ${url}`);
         return NextResponse.json(
           { success: false, error: { message: "Unauthorized: Missing token", code: "UNAUTHORIZED" } },
           { status: 401 }
         );
       }
+
       const decoded = verifyToken(token);
 
       if (!decoded) {
+        console.warn(`[AUTH] Invalid/Expired token for ${url}`);
         return NextResponse.json(
           { success: false, error: { message: "Unauthorized: Invalid token", code: "UNAUTHORIZED" } },
           { status: 401 }

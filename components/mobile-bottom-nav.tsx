@@ -25,7 +25,7 @@ export function MobileBottomNav() {
   }
 
   return (
-    <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-card/95 backdrop-blur-md border-t border-border flex items-center justify-around px-2 pb-safe pt-2">
+    <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-card/95 backdrop-blur-md border-t border-border flex items-center justify-around px-2 pb-safe pt-2 no-print">
       {navItems.map((item) => (
         <Link 
           key={item.href}
