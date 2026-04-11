@@ -495,7 +495,7 @@ export default function TopicDetailPage() {
           </div>
           
           {extractedText && (
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="glass-card rounded-xl p-6 border-primary/30 mt-6">
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="glass-card rounded-xl p-6 border-primary/30 mt-6 overflow-hidden">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="font-serif text-xl text-primary flex items-center gap-2"><Sparkles className="w-5 h-5" /> Extracted Text</h3>
                 <Button size="sm" onClick={saveExtractedAsNotes} disabled={isSaving} className="bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg">
@@ -505,7 +505,7 @@ export default function TopicDetailPage() {
               <textarea
                 value={extractedText}
                 onChange={e => setExtractedText(e.target.value)}
-                className="w-full min-h-[400px] bg-background/40 border border-border/50 rounded-xl p-6 text-base leading-[1.6] text-slate-200 resize-y focus:outline-none focus:border-primary/50 transition-all font-sans"
+                className="w-full min-h-[400px] bg-muted/20 border border-border/50 rounded-xl p-6 text-base leading-[1.6] text-foreground resize-y focus:outline-none focus:border-primary/50 transition-all font-sans"
                 placeholder="Extracted text will appear here..."
               />
             </motion.div>
@@ -681,7 +681,7 @@ export default function TopicDetailPage() {
 
       <div className="mt-12">
         <Card className="border-border bg-card rounded-3xl overflow-hidden shadow-sm">
-          <CardHeader className="pb-6 border-b border-border/50 bg-[#252833]/30">
+          <CardHeader className="pb-6 border-b border-border/50 bg-muted/20">
             <div className="flex items-center justify-between">
               <CardTitle className="font-serif text-xl font-bold flex items-center gap-2">
                 <BookOpen className="w-5 h-5 text-primary" />
@@ -689,7 +689,7 @@ export default function TopicDetailPage() {
               </CardTitle>
             </div>
           </CardHeader>
-          <CardContent className="p-8 bg-[#1C1E26]">
+          <CardContent className="p-8 bg-card">
             {topic?.sourceMaterials && topic.sourceMaterials.length > 0 ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 {[...topic.sourceMaterials]
@@ -704,7 +704,7 @@ export default function TopicDetailPage() {
                         key={idx}
                         whileHover={{ y: -4 }}
                         onClick={() => setSelectedMaterial(mat)}
-                        className="group relative flex flex-col p-6 bg-[#252833] border border-border/50 rounded-2xl cursor-pointer transition-all hover:border-[#8F8DF2] hover:shadow-[0_0_20px_rgba(143,141,242,0.15)]"
+                        className="group relative flex flex-col p-6 bg-muted/10 border border-border/50 rounded-2xl cursor-pointer transition-all hover:border-primary/50 hover:shadow-primary/10"
                       >
                         <div className="flex items-start justify-between mb-4">
                           <div className={`p-3 rounded-xl ${
@@ -717,7 +717,7 @@ export default function TopicDetailPage() {
                              <MessageSquare className="w-6 h-6" />}
                           </div>
                           <div className="flex flex-col items-end gap-2">
-                            <span className="text-[10px] text-[#A0A6B8] font-bold uppercase tracking-widest bg-muted/50 px-2 py-0.5 rounded-full">
+                            <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest bg-muted/50 px-2 py-0.5 rounded-full">
                               {mat.fileExtension || mat.type}
                             </span>
                             <button
@@ -729,20 +729,20 @@ export default function TopicDetailPage() {
                               className="p-1.5 rounded-lg hover:bg-red-500/10 transition-colors group/trash"
                               title="Delete material"
                             >
-                              <Trash2 className="w-4 h-4 text-[#A0A6B8] group-hover:text-[#FF6B6B] transition-colors" />
+                              <Trash2 className="w-4 h-4 text-muted-foreground group-hover:text-destructive transition-colors" />
                             </button>
                           </div>
                         </div>
                         
-                        <h4 className="font-medium text-foreground mb-1 line-clamp-1 group-hover:text-[#8F8DF2] transition-colors">
+                        <h4 className="font-medium text-foreground mb-1 line-clamp-1 group-hover:text-primary transition-colors">
                           {mat.title}
                         </h4>
-                        <p className="text-[11px] text-[#A0A6B8] font-medium">
+                        <p className="text-[11px] text-muted-foreground font-medium">
                           Saved: {new Date(mat.uploadedAt).toLocaleDateString()}
                         </p>
                         
                         <div className="mt-4 pt-4 border-t border-border/10 flex items-center opacity-0 group-hover:opacity-100 transition-opacity">
-                          <span className="text-[10px] font-bold text-[#8F8DF2] uppercase tracking-tighter">Click to View</span>
+                          <span className="text-[10px] font-bold text-primary uppercase tracking-tighter">Click to View</span>
                         </div>
                       </motion.div>
                     );
@@ -761,8 +761,8 @@ export default function TopicDetailPage() {
 
       {/* File Viewer Modal */}
       <Dialog open={!!selectedMaterial} onOpenChange={() => setSelectedMaterial(null)}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col p-0 border-border bg-[#1C1E26] shadow-2xl">
-          <DialogHeader className="p-8 border-b border-border/50 bg-[#252833]/50 flex-row items-center justify-between shrink-0 space-y-0">
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col p-0 border-border bg-card shadow-2xl">
+          <DialogHeader className="p-8 border-b border-border/50 bg-muted/20 flex-row items-center justify-between shrink-0 space-y-0">
             <div className="flex items-center gap-4">
               <div className={`p-3 rounded-xl ${
                 selectedMaterial?.type === 'pdf' || selectedMaterial?.fileExtension === 'pdf' ? 'bg-red-500/10 text-red-400' : 
@@ -777,7 +777,7 @@ export default function TopicDetailPage() {
                 <DialogTitle className="font-serif text-2xl text-foreground">
                   {selectedMaterial?.title}
                 </DialogTitle>
-                <p className="text-xs text-[#A0A6B8] mt-1 font-medium tracking-wide uppercase">
+                <p className="text-xs text-muted-foreground mt-1 font-medium tracking-wide uppercase">
                   {selectedMaterial?.fileExtension || selectedMaterial?.type} • Added on {selectedMaterial && new Date(selectedMaterial.uploadedAt).toLocaleString()}
                 </p>
               </div>
@@ -787,7 +787,7 @@ export default function TopicDetailPage() {
           <div className="flex-1 overflow-y-auto p-8 md:p-12 custom-scrollbar">
             {selectedMaterial?.type === 'diagram' && selectedMaterial?.url && (
               <div className="mb-12">
-                <p className="text-[10px] text-[#A0A6B8] font-bold uppercase tracking-[0.2em] mb-4">Original Image Reference</p>
+                <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-[0.2em] mb-4">Original Image Reference</p>
                 <div className="relative rounded-2xl overflow-hidden border border-border/50 group max-w-2xl mx-auto">
                   <img src={selectedMaterial.url} alt="Source Diagram" className="w-full h-auto object-contain bg-muted/5 group-hover:scale-[1.02] transition-transform duration-500" />
                   <a href={selectedMaterial.url} target="_blank" rel="noopener noreferrer" className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -798,12 +798,12 @@ export default function TopicDetailPage() {
               </div>
             )}
 
-            <div className="prose prose-invert prose-slate max-w-none 
+            <div className="prose dark:prose-invert prose-slate max-w-none 
               prose-headings:font-serif prose-headings:font-bold prose-headings:text-foreground
-              prose-p:text-[#E2E8F0] prose-p:leading-relaxed prose-p:text-lg
+              prose-p:text-foreground/90 prose-p:leading-relaxed prose-p:text-lg
               prose-strong:text-primary prose-strong:font-bold
-              prose-code:bg-[#252833] prose-code:text-primary prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded-md prose-code:before:content-none prose-code:after:content-none
-              prose-ul:my-6 prose-li:my-2 prose-li:text-[#E2E8F0]
+              prose-code:bg-muted prose-code:text-primary prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded-md prose-code:before:content-none prose-code:after:content-none
+              prose-ul:my-6 prose-li:my-2 prose-li:text-foreground/90
             ">
               <ReactMarkdown>
                 {selectedMaterial?.content || selectedMaterial?.extractedText || "No content found for this material."}
@@ -815,16 +815,16 @@ export default function TopicDetailPage() {
 
       {/* Deletion Confirmation Modal */}
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <DialogContent className="max-w-md border-border bg-[#252833] shadow-2xl p-0 overflow-hidden">
+        <DialogContent className="max-w-md border-border bg-card shadow-2xl p-0 overflow-hidden">
           <div className="p-8 space-y-6">
-            <div className="w-14 h-14 rounded-2xl bg-red-500/10 flex items-center justify-center border border-red-500/20 mx-auto">
-              <AlertTriangle className="w-8 h-8 text-[#FF6B6B]" />
+            <div className="w-14 h-14 rounded-2xl bg-destructive/10 flex items-center justify-center border border-destructive/20 mx-auto">
+              <AlertTriangle className="w-8 h-8 text-destructive" />
             </div>
             
             <div className="text-center space-y-2">
-              <DialogTitle className="font-serif text-2xl text-white">Delete Material?</DialogTitle>
-              <DialogDescription className="text-[#A0A6B8] text-sm leading-relaxed px-4">
-                Are you sure you want to delete <span className="text-white font-medium">'{materialToDelete?.title}'</span>? 
+              <DialogTitle className="font-serif text-2xl text-foreground">Delete Material?</DialogTitle>
+              <DialogDescription className="text-muted-foreground text-sm leading-relaxed px-4">
+                Are you sure you want to delete <span className="text-foreground font-medium">'{materialToDelete?.title}'</span>? 
                 This action will also remove any associated AI-generated insights and cannot be undone.
               </DialogDescription>
             </div>
@@ -833,14 +833,14 @@ export default function TopicDetailPage() {
               <Button 
                 variant="outline" 
                 onClick={() => setIsDeleteDialogOpen(false)}
-                className="flex-1 rounded-xl border-border bg-transparent hover:bg-white/5 text-[#A0A6B8]"
+                className="flex-1 rounded-xl border-border bg-transparent text-muted-foreground"
               >
                 Cancel
               </Button>
               <Button 
                 onClick={handleDeleteMaterial}
                 disabled={isDeleting}
-                className="flex-1 rounded-xl bg-[#FF6B6B] hover:bg-[#FF6B6B]/90 text-white font-bold"
+                className="flex-1 rounded-xl bg-destructive hover:bg-destructive/90 text-destructive-foreground font-bold"
               >
                 {isDeleting ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Delete'}
               </Button>
@@ -851,15 +851,15 @@ export default function TopicDetailPage() {
 
       {/* Regeneration Confirmation */}
       <AlertDialog open={isRegenConfirmOpen} onOpenChange={setIsRegenConfirmOpen}>
-        <AlertDialogContent className="bg-[#252833] border-border text-white">
+        <AlertDialogContent className="bg-card border-border text-foreground">
           <AlertDialogHeader>
             <AlertDialogTitle className="font-serif text-xl">Overwriting Existing Content?</AlertDialogTitle>
-            <AlertDialogDescription className="text-[#A0A6B8]">
+            <AlertDialogDescription className="text-muted-foreground">
               You already have {regenType} for this topic. Regenerating will permanently overwrite them with new AI-generated versions. This cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel className="bg-transparent border-border hover:bg-white/5 text-[#A0A6B8] rounded-xl">Cancel</AlertDialogCancel>
+            <AlertDialogCancel className="bg-transparent border-border text-muted-foreground rounded-xl">Cancel</AlertDialogCancel>
             <AlertDialogAction 
               onClick={() => {
                 if (regenType) handleGenerate(regenType, true);
@@ -887,14 +887,14 @@ export default function TopicDetailPage() {
         {/* Score History Section */}
         <div className="flex flex-col h-full">
           <Card className="border-border bg-card rounded-3xl overflow-hidden shadow-sm h-full flex flex-col">
-            <CardHeader className="pb-2.5 border-b border-border/50 bg-[#252833]/30">
+            <CardHeader className="pb-2.5 border-b border-border/50 bg-muted/20">
               <CardTitle className="font-serif text-xl font-bold flex items-center gap-3">
-                <BarChart3 className="w-5 h-5 text-[#8F8DF2]" />
+                <BarChart3 className="w-5 h-5 text-primary" />
                 Score History
               </CardTitle>
             </CardHeader>
             <CardContent className="px-8 py-5 flex-1 flex flex-col">
-              <p className="text-xs text-[#A0A6B8] uppercase tracking-wider mb-4 font-medium">
+              <p className="text-xs text-muted-foreground uppercase tracking-wider mb-4 font-medium">
                 Quiz scores over time
               </p>
               {sessions.length > 0 && isMounted ? (
@@ -903,37 +903,42 @@ export default function TopicDetailPage() {
                     <BarChart data={studyTimeData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                       <XAxis 
                         dataKey="day" 
-                        stroke="#A0A6B8" 
+                        stroke="var(--color-muted-foreground)" 
                         fontSize={11} 
                         tickLine={false} 
                         axisLine={false} 
-                        tick={{ fill: '#A0A6B8', fontWeight: 600 }}
+                        tick={{ fill: 'var(--color-muted-foreground)', fontWeight: 600 }}
                       />
                       <YAxis 
-                        stroke="#A0A6B8" 
+                        stroke="var(--color-muted-foreground)" 
                         fontSize={11} 
                         tickLine={false} 
                         axisLine={false} 
                         domain={[0, 100]}
                         ticks={[0, 25, 50, 75, 100]}
-                        tick={{ fill: '#A0A6B8', fontWeight: 600 }}
+                        tick={{ fill: 'var(--color-muted-foreground)', fontWeight: 600 }}
                       />
                       <RechartsTooltip 
-                        cursor={{ fill: '#8F8DF2', opacity: 0.05 }}
-                        contentStyle={{ backgroundColor: '#252833', borderColor: '#323645', borderRadius: '12px', border: '1px solid rgba(143, 141, 242, 0.1)' }}
-                        itemStyle={{ color: '#8F8DF2', fontWeight: 'bold' }}
+                        cursor={{ fill: 'var(--color-primary)', opacity: 0.05 }}
+                        contentStyle={{ 
+                          backgroundColor: 'var(--color-card)', 
+                          borderColor: 'var(--color-border)', 
+                          borderRadius: '12px', 
+                          border: '1px solid var(--color-border)' 
+                        }}
+                        itemStyle={{ color: 'var(--color-primary)', fontWeight: 'bold' }}
                         formatter={(value: any) => [`${value}%`, 'Average Score']}
                       />
                       <Bar 
                         dataKey="score" 
                         radius={[6, 6, 0, 0]} 
                         barSize={32}
-                        fill="#8F8DF2"
+                        fill="var(--color-primary)"
                       >
                         {studyTimeData.map((entry, index) => (
                           <Cell 
                             key={`cell-${index}`} 
-                            fill={entry.score > 0 ? '#8F8DF2' : '#323645'} 
+                            fill={entry.score > 0 ? 'var(--color-primary)' : 'var(--color-border)'} 
                             fillOpacity={entry.score > 0 ? 1 : 0.3}
                           />
                         ))}
@@ -944,7 +949,7 @@ export default function TopicDetailPage() {
               ) : sessions.length > 0 && !isMounted ? (
                 <div className="h-[240px] w-full bg-muted/20 animate-pulse rounded-2xl mt-auto" />
               ) : (
-                <div className="flex flex-col items-center justify-center flex-1 text-[#A0A6B8]">
+                <div className="flex flex-col items-center justify-center flex-1 text-muted-foreground">
                   <p className="text-sm font-medium">No quiz data yet.</p>
                   <p className="text-xs mt-1">Complete a quiz to see your score history.</p>
                 </div>
