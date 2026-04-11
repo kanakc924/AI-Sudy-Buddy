@@ -2,8 +2,11 @@
 
 import React from "react";
 import Link from "next/link";
-import { Play, FileText, Image as ImageIcon, Trash2 } from "lucide-react";
+import { Play, FileText, Image as ImageIcon, Trash2, ArrowRight } from "lucide-react";
 import { Topic } from "../../hooks/useTopics";
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 
 interface TopicCardProps {
   topic: Topic;
@@ -12,49 +15,59 @@ interface TopicCardProps {
 
 export function TopicCard({ topic, onDelete }: TopicCardProps) {
   return (
-    <div className="glass rounded-xl overflow-hidden group hover:border-accent/40 transition-colors flex flex-col">
-      <div className="p-5 flex-1">
-        <div className="flex justify-between items-start mb-3">
-          <h3 className="text-lg font-playfair font-semibold group-hover:text-accent transition-colors line-clamp-2 pr-6">
+    <Card className="group border-border bg-card hover:border-primary/40 transition-all duration-300 flex flex-col shadow-sm hover:shadow-xl hover:shadow-primary/5">
+      <CardHeader className="p-5 pb-3">
+        <div className="flex justify-between items-start">
+          <CardTitle className="font-serif text-xl font-bold group-hover:text-primary transition-colors line-clamp-2 pr-6 leading-tight">
             <Link href={`/topics/${topic._id}`}>
               {topic.title}
             </Link>
-          </h3>
+          </CardTitle>
           <button 
             onClick={(e: any) => {
               e.preventDefault();
               if (confirm("Are you sure you want to delete this topic?")) onDelete(topic._id);
             }}
-            className="p-1.5 -mr-1.5 rounded-md text-muted hover:text-red hover:bg-red/10 transition-colors shrink-0"
+            className="p-1.5 -mr-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors shrink-0"
           >
             <Trash2 size={16} />
           </button>
         </div>
-        
-        <p className="text-muted text-sm line-clamp-2 mb-4">
+      </CardHeader>
+      
+      <CardContent className="p-5 pt-0 flex-1">
+        <p className="text-muted-foreground text-sm line-clamp-2 mb-6 leading-relaxed min-h-10">
           {topic.notes ? topic.notes : "No notes yet. Click to add or upload content."}
         </p>
 
-        <div className="flex items-center gap-3 text-xs text-muted font-medium mb-1">
-          <div className="flex items-center gap-1">
-            <FileText size={14} className={topic.notes ? "text-blue" : ""} /> 
-            <span>Notes</span>
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-1.5">
+            <Badge variant="secondary" className="bg-primary/5 text-primary border-primary/10 px-2 py-0 h-5 text-[10px] font-bold uppercase tracking-wider">
+              <FileText size={10} className="mr-1" /> Notes
+            </Badge>
           </div>
-          <div className="flex items-center gap-1">
-            <ImageIcon size={14} className={topic.sourceImages?.length > 0 ? "text-green" : ""} />
-            <span>{topic.sourceImages?.length || 0} Images</span>
-          </div>
+          {topic.sourceImages?.length > 0 && (
+            <div className="flex items-center gap-1.5">
+              <Badge variant="secondary" className="bg-emerald-500/5 text-emerald-500 border-emerald-500/10 px-2 py-0 h-5 text-[10px] font-bold uppercase tracking-wider">
+                <ImageIcon size={10} className="mr-1" /> {topic.sourceImages.length} Images
+              </Badge>
+            </div>
+          )}
         </div>
-      </div>
+      </CardContent>
 
-      <div className="bg-surface2/50 p-3 border-t border-border flex justify-between items-center mt-auto gap-2">
-         <Link href={`/topics/${topic._id}`} className="flex-1 py-2 text-center text-sm font-medium rounded-md hover:bg-surface2 text-text transition-colors">
-            Manage
+      <CardFooter className="p-3 border-t border-border/50 flex gap-2 bg-muted/20">
+         <Link href={`/topics/${topic._id}`} className="flex-1">
+            <Button variant="ghost" size="sm" className="w-full text-[10px] uppercase tracking-widest font-bold text-muted-foreground hover:bg-card hover:text-foreground h-9">
+               Manage
+            </Button>
          </Link>
-         <Link href={`/topics/${topic._id}/flashcards`} className="flex-1 py-2 flex items-center justify-center gap-2 text-sm font-medium rounded-md bg-accent/10 hover:bg-accent/20 text-accent transition-colors">
-            <Play size={14} /> Study
+         <Link href={`/topics/${topic._id}/flashcards`} className="flex-1">
+            <Button size="sm" className="w-full gap-2 text-[10px] uppercase tracking-widest font-bold rounded-xl bg-primary/10 hover:bg-primary/20 text-primary h-9 shadow-sm">
+               <Play size={12} fill="currentColor" /> Study
+            </Button>
          </Link>
-      </div>
-    </div>
+      </CardFooter>
+    </Card>
   );
 }
