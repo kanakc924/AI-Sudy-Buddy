@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { AppSidebar } from '@/components/app-sidebar'
 import { MobileBottomNav } from '@/components/mobile-bottom-nav'
 import { Navbar } from '@/components/layout/Navbar'
-import { ProtectedRoute } from '@/components/common/ProtectedRoute'
+import { ProtectedRoute } from '@/components/auth/ProtectedRoute'
 import { SubjectProvider } from '@/context/SubjectContext'
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {

@@ -3,7 +3,7 @@
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/hooks/useAuth'
-import { LoadingSkeleton } from './LoadingSkeleton'
+import { Skeleton } from '@/components/ui/skeleton'
 
 export function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth()
@@ -18,7 +18,7 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center p-8">
-        <LoadingSkeleton className="h-[60vh] w-full max-w-4xl" />
+        <Skeleton className="h-[60vh] w-full max-w-4xl rounded-3xl" />
       </div>
     )
   }
